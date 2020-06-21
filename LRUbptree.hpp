@@ -18,8 +18,8 @@
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define BLOCK_SIZE 1024
-#define CACHE_INITIAL_SIZE_BLOCK 30
-#define CACHE_MAX_SIZE_BLOCK 50
+#define CACHE_INITIAL_SIZE_BLOCK 60
+#define CACHE_MAX_SIZE_BLOCK 90
 #define CACHE_INNITIAL_SIZE_DATA 30
 #define CACHE_MAX_SIZE_DATA 50
 enum NODE_TYPE {LEAF, INNER};
