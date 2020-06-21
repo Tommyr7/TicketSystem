@@ -3,7 +3,11 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include <map>
+#include <fstream>
+#include "gadgets.h"
+#include "LRUbptree.hpp"
+const int modp1=998244353;
+const int modp2=100000007;
 #define __File1 "1.txt"
 #define __File2 "2.txt"
 #define __File3 "3.txt"
@@ -200,7 +204,7 @@ bool operator <(const user_id &rhs1,const user_id &rhs2)
 struct user
 {
     char username[23];
-    char password[33];
+    pair<int,int> password;
     char name[17];
     char mailAddr[33];
     int privilege;
@@ -208,7 +212,8 @@ struct user
     user()
     {
         memset(username,0,sizeof(username));
-        memset(password,0,sizeof(password));
+        password.first=0;
+        password.second=0;
         memset(name,0,sizeof(name));
         memset(mailAddr,0,sizeof(mailAddr));
         privilege=0;
@@ -321,10 +326,10 @@ struct train
     int stationNum;
     station stations[103];
     int seatNum;
-    int prices[103];
+    int prices[103],sum_prices[103];
     time startTimes;
-    int travelTimes[103];
-    int stopoverTimes[103];
+    int travelTimes[103],sum_travelTimes[103];
+    int stopoverTimes[103],sum_stopoverTimes[103];
     date left_saleDate,right_saleDate;
     char type;
     int current_status;
@@ -335,8 +340,11 @@ struct train
         stationNum=0;
         seatNum=0;
         memset(prices,0,sizeof(prices));
+        memset(sum_prices,0,sizeof(sum_prices));
         memset(travelTimes,0,sizeof(travelTimes));
+        memset(sum_travelTimes,0,sizeof(sum_travelTimes));
         memset(stopoverTimes,0,sizeof(stopoverTimes));
+        memset(sum_stopoverTimes,0,sizeof(sum_stopoverTimes));
         type='\0';
         current_status=0;
         memset(ticket_num,0,sizeof(ticket_num));
@@ -408,7 +416,7 @@ struct ans2_order
     date d1,d2;
     time t1,t2;
     int pos1_s,pos1_t,pos2_s,pos2_t;
-    int travel_time;
+    int travel_time,travel1_time;
     int travel1_cost,travel2_cost;
     int travel1_max,travel2_max;
     ans2_order()
@@ -418,6 +426,7 @@ struct ans2_order
         pos2_s=0;
         pos2_t=0;
         travel_time=0;
+        travel1_time=0;
         travel1_cost=0;
         travel2_cost=0;
         travel1_max=0;
@@ -427,12 +436,14 @@ struct ans2_order
 bool cmp2_time(ans2_order &a,ans2_order &b)
 {
     if (a.travel_time!=b.travel_time) return (a.travel_time<b.travel_time);
+    if (a.travel1_time!=b.travel1_time) return (a.travel1_time<b.travel1_time);
     return (a.ans_train1<b.ans_train1);
 }
 bool cmp2_cost(ans2_order &a,ans2_order &b)
 {
     if (a.travel1_cost+a.travel2_cost!=b.travel1_cost+b.travel2_cost)
         return (a.travel1_cost+a.travel2_cost<b.travel1_cost+b.travel2_cost);
+    if (a.travel1_time!=b.travel1_time) return (a.travel1_time<b.travel1_time);
     return (a.ans_train1<b.ans_train1);
 }
 bool order2_check(ans2_order &a,ans2_order &b,bool flag)
@@ -460,11 +471,20 @@ struct order
         status=0;
     }
 };
-map<user_id,user> user_structure;
-map<train_id,train> train_structure;
-map<pair<station,train_id>,train> station_structure;
-map<pair<user_id,int>,order> order_structure;
-map<pair<train_id,int>,pair<user_id,order> > alter_structure;
+bool check_new_file(const string &path)
+{
+    fstream test;
+    bool ans;
+    test.open(path,ios::in);
+    if (!test.fail()) ans=false; else ans=true;
+    test.close();
+    return ans;
+}
+LRUBPTree<user_id,user> user_structure(__File1,__File2,check_new_file(__File1));
+LRUBPTree<train_id,train> train_structure(__File3,__File4,check_new_file(__File3));
+LRUBPTree<pair<station,train_id>,train> station_structure(__File5,__File6,check_new_file(__File5));
+LRUBPTree<pair<user_id,int>,order> order_structure(__File7,__File8,check_new_file(__File7));
+LRUBPTree<pair<train_id,int>,pair<user_id,order> > alter_structure(__File9,__File10,check_new_file(__File9));
 void pre_work()
 {
     cnt=0;
@@ -497,7 +517,17 @@ void add_user()
             for (int i=0;i<len;i++)
                 tmp.username[i]=tmp_id.username[i];
         }
-        else if (op=='p') scanf("%s",tmp.password);
+        else if (op=='p') 
+        {
+            char s[37];
+            scanf("%s",s);
+            int len=strlen(s);
+            for (int i=0;i<len;i++)
+            {
+                tmp.password.first=(307LL*tmp.password.first+s[i]+1)%modp1;
+                tmp.password.second=(307LL*tmp.password.second+s[i]+1)%modp2;
+            }
+        }
         else if (op=='n') scanf("%s",tmp.name);
         else if (op=='m') scanf("%s",tmp.mailAddr);
         else if (op=='g') scanf("%d",&tmp.privilege);
@@ -510,46 +540,55 @@ void add_user()
     }
     if (user_structure.size()!=0)
     {
-        map<user_id,user>::iterator it=user_structure.find(cur_id);
-        if ((it==user_structure.end())||(!it->second.login_flag)||(it->second.privilege<=tmp.privilege))
+        LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+        if ((it==user_structure.end())||(!it.data().login_flag)||(it.data().privilege<=tmp.privilege))
         {
             printf("%d\n",-1);
             return;
         }
     } else tmp.privilege=10;
     printf("%d\n",0);
-    user_structure[tmp_id]=tmp;
+    user_structure.insert(tmp_id,tmp);
 }
 void login()
 {
     user_id cur_id;
-    char p[33];
+    pair<int,int> tmp_password;
+    tmp_password.first=0;
+    tmp_password.second=0;
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
         if (op=='u') scanf("%s",cur_id.username);
-        else if (op=='p') scanf("%s",p);
+        else if (op=='p') 
+        {
+            char p[33];
+            scanf("%s",p);
+            int len=strlen(p);
+            for (int i=0;i<len;i++)
+            {
+                tmp_password.first=(307LL*tmp_password.first+p[i]+1)%modp1;
+                tmp_password.second=(307LL*tmp_password.second+p[i]+1)%modp2;
+            }
+        }
         op=getchar();
     }
-    map<user_id,user>::iterator it=user_structure.find(cur_id);
-    if (it==user_structure.end()||it->second.login_flag)
+    LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+    if (it==user_structure.end()||it.data().login_flag)
     {
         printf("%d\n",-1);
         return;
     }
-    int len=strlen(p);
     bool flag=true;
-    if (len!=strlen(it->second.password)) flag=false;
-    for (int i=0;i<len&&flag;i++)
-        if (p[i]!=it->second.password[i]) flag=false;
+    if (tmp_password!=it.data().password) flag=false;
     if (!flag)
     {
         printf("%d\n",-1);
         return;
     }
     printf("%d\n",0);
-    it->second.login_flag=true;
+    it.data(true).login_flag=true;
 }
 void logout()
 {
@@ -561,14 +600,14 @@ void logout()
         if (op=='u') scanf("%s",cur_id.username);
         op=getchar();
     }
-    map<user_id,user>::iterator it=user_structure.find(cur_id);
-    if (it==user_structure.end()||(!it->second.login_flag))
+    LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+    if (it==user_structure.end()||(!it.data().login_flag))
     {
         printf("%d\n",-1);
         return;
     }
     printf("%d\n",0);
-    it->second.login_flag=false;
+    it.data(true).login_flag=false;
 }
 void query_profile()
 {
@@ -581,26 +620,26 @@ void query_profile()
         else if (op=='u') scanf("%s",tmp_id.username);
         op=getchar();
     }
-    map<user_id,user>::iterator it1=user_structure.find(cur_id);
-    map<user_id,user>::iterator it2=user_structure.find(tmp_id);
-    if (it1==user_structure.end()||it2==user_structure.end()||(!it1->second.login_flag)||(it1->second.privilege<it2->second.privilege)||((it1->second.privilege==it2->second.privilege)&&(it1!=it2)))
+    LRUBPTree<user_id,user>::iterator it1=user_structure.find(cur_id);
+    LRUBPTree<user_id,user>::iterator it2=user_structure.find(tmp_id);
+    if (it1==user_structure.end()||it2==user_structure.end()||(!it1.data().login_flag)||(it1.data().privilege<it2.data().privilege)||((it1.data().privilege==it2.data().privilege)&&(it1!=it2)))
     {
         printf("%d\n",-1);
         return;
     }
-    int len=strlen(it2->second.username);
+    int len=strlen(it2.data().username);
     for (int i=0;i<len;i++)
-        printf("%c",it2->second.username[i]);
+        printf("%c",it2.data().username[i]);
     printf(" ");
-    len=strlen(it2->second.name);
+    len=strlen(it2.data().name);
     for (int i=0;i<len;i++)
-        printf("%c",it2->second.name[i]);
+        printf("%c",it2.data().name[i]);
     printf(" ");
-    len=strlen(it2->second.mailAddr);
+    len=strlen(it2.data().mailAddr);
     for (int i=0;i<len;i++)
-        printf("%c",it2->second.mailAddr[i]);
+        printf("%c",it2.data().mailAddr[i]);
     printf(" ");
-    printf("%d\n",it2->second.privilege);
+    printf("%d\n",it2.data().privilege);
 }
 void modify_profile()
 {
@@ -615,7 +654,14 @@ void modify_profile()
         else if (op=='u') scanf("%s",tmp_id.username);
         else if (op=='p') 
         {
-            scanf("%s",tmp.password);
+            char s[33];
+            scanf("%s",s);
+            int len=strlen(s);
+            for (int i=0;i<len;i++)
+            {
+                tmp.password.first=(307LL*tmp.password.first+s[i]+1)%modp1;
+                tmp.password.second=(307LL*tmp.password.second+s[i]+1)%modp2;
+            }
             flag_p=true;
         }
         else if (op=='n') 
@@ -635,14 +681,14 @@ void modify_profile()
         }
         op=getchar();
     }
-    map<user_id,user>::iterator it1=user_structure.find(cur_id);
-    map<user_id,user>::iterator it2=user_structure.find(tmp_id);
-    if (it1==user_structure.end()||it2==user_structure.end()||(!it1->second.login_flag)||(it1->second.privilege<it2->second.privilege)||((it1->second.privilege==it2->second.privilege)&&(it1!=it2)))
+    LRUBPTree<user_id,user>::iterator it1=user_structure.find(cur_id);
+    LRUBPTree<user_id,user>::iterator it2=user_structure.find(tmp_id);
+    if (it1==user_structure.end()||it2==user_structure.end()||(!it1.data().login_flag)||(it1.data().privilege<it2.data().privilege)||((it1.data().privilege==it2.data().privilege)&&(it1!=it2)))
     {
         printf("%d\n",-1);
         return;
     }
-    if (flag_g&&(tmp.privilege>=it1->second.privilege))
+    if (flag_g&&(tmp.privilege>=it1.data().privilege))
     {
         printf("%d\n",-1);
         return;
@@ -651,37 +697,31 @@ void modify_profile()
     for (int i=0;i<len;i++)
         printf("%c",tmp_id.username[i]);
     printf(" ");
-    if (flag_p)
-    {
-        memset(it2->second.password,0,sizeof(it2->second.password));
-        len=strlen(tmp.password);
-        for (int i=0;i<len;i++)
-            it2->second.password[i]=tmp.password[i];
-    }
+    if (flag_p) it2.data(true).password=tmp.password;
     if (flag_n)
     {
-        memset(it2->second.name,0,sizeof(it2->second.name));
+        memset(it2.data(true).name,0,sizeof(it2.data().name));
         len=strlen(tmp.name);
         for (int i=0;i<len;i++)
-            it2->second.name[i]=tmp.name[i];
+            it2.data(true).name[i]=tmp.name[i];
     }
-    len=strlen(it2->second.name);
+    len=strlen(it2.data().name);
     for (int i=0;i<len;i++)
-        printf("%c",it2->second.name[i]);
+        printf("%c",it2.data().name[i]);
     printf(" ");
     if (flag_m)
     {
-        memset(it2->second.mailAddr,0,sizeof(it2->second.mailAddr));
+        memset(it2.data(true).mailAddr,0,sizeof(it2.data().mailAddr));
         len=strlen(tmp.mailAddr);
         for (int i=0;i<len;i++)
-            it2->second.mailAddr[i]=tmp.mailAddr[i];
+            it2.data(true).mailAddr[i]=tmp.mailAddr[i];
     }
-    len=strlen(it2->second.mailAddr);
+    len=strlen(it2.data().mailAddr);
     for (int i=0;i<len;i++)
-        printf("%c",it2->second.mailAddr[i]);
+        printf("%c",it2.data().mailAddr[i]);
     printf(" ");
-    if (flag_g) it2->second.privilege=tmp.privilege;
-    printf("%d\n",it2->second.privilege);
+    if (flag_g) it2.data(true).privilege=tmp.privilege;
+    printf("%d\n",it2.data().privilege);
 }
 void add_train()
 {
@@ -785,17 +825,76 @@ void add_train()
         }
         op=getchar();
     }
-    map<train_id,train>::iterator it=train_structure.find(tmp_id);
-    if (it!=train_structure.end())
+    LRUBPTree<train_id,train>::iterator it=train_structure.find(tmp_id);
+    if (it!=train_structure.end()&&it.data().current_status!=-1)
     {
         printf("%d\n",-1);
         return;
     }
     printf("%d\n",0);
-    for (int k=0;k<=100;k++)
+    if (it==train_structure.end())
+    {
+        for (int k=0;k<=100;k++)
+            for (int i=0;i<tmp.stationNum-1;i++)
+                tmp.ticket_num[k][i]=tmp.seatNum;
         for (int i=0;i<tmp.stationNum-1;i++)
-            tmp.ticket_num[k][i]=tmp.seatNum;
-    train_structure[tmp_id]=tmp;
+            tmp.sum_travelTimes[i+1]=tmp.sum_travelTimes[i]+tmp.travelTimes[i];
+        for (int i=0;i<tmp.stationNum-2;i++)
+            tmp.sum_stopoverTimes[i+1]=tmp.sum_stopoverTimes[i]+tmp.stopoverTimes[i];
+        for (int i=0;i<tmp.stationNum-1;i++)
+            tmp.sum_prices[i+1]=tmp.sum_prices[i]+tmp.prices[i];
+        train_structure.insert(tmp_id,tmp);
+    } else
+    {
+        it.data(true).current_status=0;
+        for (int k=0;k<=100;k++)
+            for (int i=0;i<tmp.stationNum-1;i++)
+                tmp.ticket_num[k][i]=tmp.seatNum;
+        for (int i=0;i<tmp.stationNum-1;i++)
+            tmp.sum_travelTimes[i+1]=tmp.sum_travelTimes[i]+tmp.travelTimes[i];
+        for (int i=0;i<tmp.stationNum-2;i++)
+            tmp.sum_stopoverTimes[i+1]=tmp.sum_stopoverTimes[i]+tmp.stopoverTimes[i];
+        for (int i=0;i<tmp.stationNum-1;i++)
+            tmp.sum_prices[i+1]=tmp.sum_prices[i]+tmp.prices[i];
+        it.data(true).stationNum=tmp.stationNum;
+        for (int i=0;i<tmp.stationNum;i++)
+        {
+            memset(it.data(true).stations[i].station_name,0,sizeof(it.data().stations[i].station_name));
+            int len=strlen(tmp.stations[i].station_name);
+            for (int j=0;j<len;j++)
+                it.data(true).stations[i].station_name[j]=tmp.stations[i].station_name[j];
+        }
+        it.data(true).seatNum=tmp.seatNum;
+        memset(it.data(true).prices,0,sizeof(it.data().prices));
+        memset(it.data(true).sum_prices,0,sizeof(it.data().sum_prices));
+        for (int i=0;i<tmp.stationNum-1;i++)
+            it.data(true).prices[i]=tmp.prices[i];
+        for (int i=0;i<tmp.stationNum;i++)
+            it.data(true).sum_prices[i]=tmp.sum_prices[i];
+        it.data(true).startTimes.hour=tmp.startTimes.hour;
+        it.data(true).startTimes.minute=tmp.startTimes.minute;
+        memset(it.data(true).travelTimes,0,sizeof(it.data().travelTimes));
+        memset(it.data(true).sum_travelTimes,0,sizeof(it.data().sum_travelTimes));
+        for (int i=0;i<tmp.stationNum-1;i++)
+            it.data(true).travelTimes[i]=tmp.travelTimes[i];
+        for (int i=0;i<tmp.stationNum;i++)
+            it.data(true).sum_travelTimes[i]=tmp.sum_travelTimes[i];
+        memset(it.data(true).stopoverTimes,0,sizeof(it.data().stopoverTimes));
+        memset(it.data(true).sum_stopoverTimes,0,sizeof(it.data().sum_stopoverTimes));
+        for (int i=0;i<tmp.stationNum-2;i++)
+            it.data(true).stopoverTimes[i]=tmp.stopoverTimes[i];
+        for (int i=0;i<tmp.stationNum-1;i++)
+            it.data(true).sum_stopoverTimes[i]=tmp.sum_stopoverTimes[i];
+        it.data(true).left_saleDate.month=tmp.left_saleDate.month;
+        it.data(true).left_saleDate.day=tmp.left_saleDate.day;
+        it.data(true).right_saleDate.month=tmp.right_saleDate.month;
+        it.data(true).right_saleDate.day=tmp.right_saleDate.day;
+        it.data(true).type=tmp.type;
+        memset(it.data(true).ticket_num,0,sizeof(it.data().ticket_num));
+        for (int k=0;k<=100;k++)
+            for (int i=0;i<tmp.stationNum-1;i++)
+                it.data(true).ticket_num[k][i]=tmp.ticket_num[k][i];
+    }
 }
 void release_train()
 {
@@ -807,20 +906,20 @@ void release_train()
         if (op=='i') scanf("%s",cur_id.trainID);
         op=getchar();
     }
-    map<train_id,train>::iterator it=train_structure.find(cur_id);
-    if (it==train_structure.end()||it->second.current_status!=0)
+    LRUBPTree<train_id,train>::iterator it=train_structure.find(cur_id);
+    if (it==train_structure.end()||it.data().current_status!=0)
     {
         printf("%d\n",-1);
         return;
     }
     printf("%d\n",0);
-    it->second.current_status=1;
-    for (int i=0;i<(it->second.stationNum);i++)
+    it.data(true).current_status=1;
+    for (int i=0;i<(it.data().stationNum);i++)
     {
         pair<station,train_id> tmp;
-        tmp.first=it->second.stations[i];
-        tmp.second=it->first;
-        station_structure[tmp]=it->second;
+        tmp.first=it.data().stations[i];
+        tmp.second=it.key();
+        station_structure.insert(tmp,it.data());
     }
 }
 void query_train()
@@ -851,24 +950,24 @@ void query_train()
         op=getchar();
     }
     d=now_date;
-    map<train_id,train>::iterator it=train_structure.find(cur_id);
-    if ((it==train_structure.end())||(now_date<it->second.left_saleDate)||(it->second.right_saleDate<now_date)||(it->second.current_status==-1))
+    LRUBPTree<train_id,train>::iterator it=train_structure.find(cur_id);
+    if ((it==train_structure.end())||(now_date<it.data().left_saleDate)||(it.data().right_saleDate<now_date)||(it.data().current_status==-1))
     {
         printf("%d\n",-1);
         return;
     }
-    int len=strlen(it->second.trainID);
+    int len=strlen(it.data().trainID);
     for (int i=0;i<len;i++)
-        printf("%c",it->second.trainID[i]);
+        printf("%c",it.data().trainID[i]);
     printf(" ");
-    printf("%c\n",it->second.type);
-    time now_time=it->second.startTimes;
+    printf("%c\n",it.data().type);
+    time now_time=it.data().startTimes;
     int total_price=0;
-    for (int i=0;i<it->second.stationNum;i++)
+    for (int i=0;i<it.data().stationNum;i++)
     {
-        len=strlen(it->second.stations[i].station_name);
+        len=strlen(it.data().stations[i].station_name);
         for (int j=0;j<len;j++)
-            printf("%c",it->second.stations[i].station_name[j]);
+            printf("%c",it.data().stations[i].station_name[j]);
         printf(" ");
         if (i==0) printf("xx-xx xx:xx ");
         else
@@ -881,10 +980,10 @@ void query_train()
             printf("%d:",now_time.hour);
             if (now_time.minute<10) printf("0");
             printf("%d ",now_time.minute);
-            if (i!=(it->second.stationNum)-1) add_time(now_date,now_time,it->second.stopoverTimes[i-1]);
+            if (i!=(it.data().stationNum)-1) add_time(now_date,now_time,it.data().stopoverTimes[i-1]);
         }
         printf("-> ");
-        if (i==(it->second.stationNum)-1) printf("xx-xx xx:xx ");
+        if (i==(it.data().stationNum)-1) printf("xx-xx xx:xx ");
         else
         {
             if (now_date.month<10) printf("0");
@@ -897,11 +996,11 @@ void query_train()
             printf("%d ",now_time.minute);
         }
         printf("%d ",total_price);
-        if (i!=(it->second.stationNum)-1) 
+        if (i!=(it.data().stationNum)-1) 
         {
-            printf("%d\n",it->second.ticket_num[calc_date(d)][i]); 
-            total_price+=it->second.prices[i];
-            add_time(now_date,now_time,it->second.travelTimes[i]);
+            printf("%d\n",it.data().ticket_num[calc_date(d)][i]); 
+            total_price+=it.data().prices[i];
+            add_time(now_date,now_time,it.data().travelTimes[i]);
         } else printf("x\n");
     }
 }
@@ -915,14 +1014,14 @@ void delete_train()
         if (op=='i') scanf("%s",cur_id.trainID);
         op=getchar();
     }
-    map<train_id,train>::iterator it=train_structure.find(cur_id);
-    if (it==train_structure.end()||it->second.current_status!=0)
+    LRUBPTree<train_id,train>::iterator it=train_structure.find(cur_id);
+    if (it==train_structure.end()||it.data().current_status!=0)
     {
         printf("%d\n",-1);
         return;
     }
     printf("%d\n",0);
-    it->second.current_status=-1;
+    it.data(true).current_status=-1;
 }
 void query_ticket()
 {
@@ -959,16 +1058,17 @@ void query_ticket()
     }
     pair<station,train_id> cur;
     cur.first=s;
-    map<pair<station,train_id>,train>::iterator it;
+    LRUBPTree<pair<station,train_id>,train>::iterator it;
     int cnt=0;
-    ans1_order ans[107];
+    psgi::vector<ans1_order> ans;
+    ans.clear();
     int T;
     for (it=station_structure.lower_bound(cur);it!=station_structure.end();it++)
     {
-        if (s<it->first.first) break;
-        train_id tmp_id=it->first.second;
-        map<train_id,train>::iterator itt=train_structure.find(tmp_id);
-        train tmp=itt->second;
+        if (s<it.key().first) break;
+        train_id tmp_id=it.key().second;
+        LRUBPTree<train_id,train>::iterator itt=train_structure.find(tmp_id);
+        train tmp=itt.data();
         if (tmp.current_status!=1) continue;
         int pos1=-1,pos2=-1;
         for (int i=0;i<tmp.stationNum;i++)
@@ -979,11 +1079,7 @@ void query_ticket()
         if (pos1!=-1&&pos2!=-1&&pos1<pos2)
         {
             bool flag=true;
-            int val=0;
-            for (int i=0;i<pos1;i++)
-                val+=tmp.travelTimes[i];
-            for (int i=1;i<=pos1;i++)
-                val+=tmp.stopoverTimes[i-1];
+            int val=tmp.sum_travelTimes[pos1]+tmp.sum_stopoverTimes[pos1];
             date tmp_d=tmp.left_saleDate;
             time tmp_t=tmp.startTimes;
             add_time(tmp_d,tmp_t,val);
@@ -996,28 +1092,26 @@ void query_ticket()
             if (flag)
             {
                 ++cnt;
-                ans[cnt].ans_train=tmp;
-                ans[cnt].d=h;
-                ans[cnt].t=tmp_t;
-                ans[cnt].pos_s=pos1;
-                ans[cnt].pos_t=pos2;
-                ans[cnt].travel_time=0;
-                ans[cnt].travel_cost=0;
-                ans[cnt].travel_max=100000;
+                ans1_order Tmp;
+                Tmp.ans_train=tmp;
+                Tmp.d=h;
+                Tmp.t=tmp_t;
+                Tmp.pos_s=pos1;
+                Tmp.pos_t=pos2;
+                Tmp.travel_max=100000;
                 int idx=calc_date(tmp.left_saleDate)+T;
+                Tmp.travel_time=tmp.sum_travelTimes[pos2]-tmp.sum_travelTimes[pos1];
+                Tmp.travel_time+=tmp.sum_stopoverTimes[pos2-1]-tmp.sum_stopoverTimes[pos1];
+                Tmp.travel_cost=tmp.sum_prices[pos2]-tmp.sum_prices[pos1];
                 for (int i=pos1;i<pos2;i++)
-                {
-                    ans[cnt].travel_time+=tmp.travelTimes[i];
-                    if (i!=pos1) ans[cnt].travel_time+=tmp.stopoverTimes[i-1];
-                    ans[cnt].travel_cost+=tmp.prices[i];
-                    if (tmp.ticket_num[idx][i]<ans[cnt].travel_max) ans[cnt].travel_max=tmp.ticket_num[idx][i];
-                }
+                    if (tmp.ticket_num[idx][i]<Tmp.travel_max) Tmp.travel_max=tmp.ticket_num[idx][i];
+                ans.push_back(Tmp);
             }
         }
     }
-    if (q) sort(ans+1,ans+cnt+1,cmp1_time); else sort(ans+1,ans+cnt+1,cmp1_cost);
+    if (q) sort(ans.begin(),ans.end(),cmp1_time); else sort(ans.begin(),ans.end(),cmp1_cost);
     printf("%d\n",cnt);
-    for (int i=1;i<=cnt;i++)
+    for (int i=0;i<cnt;i++)
     {
         int len=strlen(ans[i].ans_train.trainID);
         for (int j=0;j<len;j++)
@@ -1088,26 +1182,40 @@ void query_transfer()
         }
         op=getchar();
     }
-    map<pair<station,train_id>,train>::iterator it1,it2;
+    LRUBPTree<pair<station,train_id>,train>::iterator it1,it2;
     pair<station,train_id> cur_s,cur_t;
     cur_s.first=s;
     cur_t.first=t;
     ans2_order ans;
     bool flag_find=false;
-    for (it1=station_structure.lower_bound(cur_s);(it1!=station_structure.end())&&(!(s<it1->first.first))&&(!(it1->first.first<s));it1++)
-        for (it2=station_structure.lower_bound(cur_t);(it2!=station_structure.end())&&(!(t<it2->first.first))&&(!(it2->first.first<t));it2++)
+    for (it1=station_structure.lower_bound(cur_s);(it1!=station_structure.end())&&(!(s<it1.key().first))&&(!(it1.key().first<s));it1++)
+    {
+        train_id tmp1_train_id=it1.key().second;
+        LRUBPTree<train_id,train>::iterator itt1=train_structure.find(tmp1_train_id);
+        train tmp1=itt1.data();
+        if (tmp1.current_status!=1) continue;
+        for (it2=station_structure.lower_bound(cur_t);(it2!=station_structure.end())&&(!(t<it2.key().first))&&(!(it2.key().first<t));it2++)
         {
-            train_id tmp1_train_id=it1->first.second,tmp2_train_id=it2->first.second;
-            map<train_id,train>::iterator itt1=train_structure.find(tmp1_train_id),itt2=train_structure.find(tmp2_train_id);
-            train tmp1=itt1->second,tmp2=itt2->second;
-            if (tmp1.current_status!=1||tmp2.current_status!=1) continue;
+            train_id tmp2_train_id=it2.key().second;
+            LRUBPTree<train_id,train>::iterator itt2=train_structure.find(tmp2_train_id);
+            train tmp2=itt2.data();
+            if (tmp2.current_status!=1) continue;
             if ((!(tmp1<tmp2))&&(!(tmp2<tmp1))) continue;
             int pos1=-1,pos4=-1;
             for (int i=0;i<tmp1.stationNum;i++)
-                if ((!(tmp1.stations[i]<s))&&(!(s<tmp1.stations[i]))) pos1=i;
+                if ((!(tmp1.stations[i]<s))&&(!(s<tmp1.stations[i]))) 
+                {
+                    pos1=i;
+                    break;
+                }
+            if (pos1==-1) continue;
             for (int i=0;i<tmp2.stationNum;i++)
-                if ((!(tmp2.stations[i]<t))&&(!(t<tmp2.stations[i]))) pos4=i;
-            if (pos1==-1||pos4==-1) continue;
+                if ((!(tmp2.stations[i]<t))&&(!(t<tmp2.stations[i]))) 
+                {
+                    pos4=i;
+                    break;
+                }
+            if (pos4==-1) continue;
             int T1,T2;
             for (int pos2=pos1+1;pos2<tmp1.stationNum;pos2++)
                 for (int pos3=0;pos3<pos4;pos3++)
@@ -1122,52 +1230,36 @@ void query_transfer()
                     //check pos1_left
                     tmp_date=tmp1.left_saleDate;
                     tmp_time=tmp1.startTimes;
-                    total_time=0;
-                    for (int i=0;i<pos1;i++)
-                        total_time+=tmp1.travelTimes[i];
-                    for (int i=1;i<=pos1;i++)
-                        total_time+=tmp1.stopoverTimes[i-1];
+                    total_time=tmp1.sum_travelTimes[pos1]+tmp1.sum_stopoverTimes[pos1];
                     add_time(tmp_date,tmp_time,total_time);
                     if (h<tmp_date) continue;
                     T1=cal_time(h,tmp_time,tmp_date,tmp_time)/(24*60);
                     //check pos1_right
                     tmp_date=tmp1.right_saleDate;
                     tmp_time=tmp1.startTimes;
-                    total_time=0;
-                    for (int i=0;i<pos1;i++)
-                        total_time+=tmp1.travelTimes[i];
-                    for (int i=1;i<=pos1;i++)
-                        total_time+=tmp1.stopoverTimes[i-1];
+                    total_time=tmp1.sum_travelTimes[pos1]+tmp1.sum_stopoverTimes[pos1];
                     add_time(tmp_date,tmp_time,total_time);
                     if (tmp_date<h) continue;
 
                     tmp_date=h;
                     tmp_order.d1=tmp_date;
                     tmp_order.t1=tmp_time;
-                    for (int i=pos1;i<pos2;i++)
-                        add_time(tmp_date,tmp_time,tmp1.travelTimes[i]);
-                    for (int i=pos1+1;i<pos2;i++)
-                        add_time(tmp_date,tmp_time,tmp1.stopoverTimes[i-1]);
+                    total_time=tmp1.sum_travelTimes[pos2]-tmp1.sum_travelTimes[pos1];
+                    total_time+=tmp1.sum_stopoverTimes[pos2-1]-tmp1.sum_stopoverTimes[pos1];
+                    add_time(tmp_date,tmp_time,total_time);
+                    tmp_order.travel1_time=total_time;
                     //check pos3_right
                     date Tmp_date;
                     time Tmp_time;
                     Tmp_date=tmp2.right_saleDate;
                     Tmp_time=tmp2.startTimes;
-                    total_time=0;
-                    for (int i=0;i<pos3;i++)
-                        total_time+=tmp2.travelTimes[i];
-                    for (int i=1;i<=pos3;i++)
-                        total_time+=tmp2.stopoverTimes[i-1];
+                    total_time=tmp2.sum_travelTimes[pos3]+tmp2.sum_stopoverTimes[pos3];
                     add_time(Tmp_date,Tmp_time,total_time);
                     if (!check_time(tmp_date,tmp_time,Tmp_date,Tmp_time)) continue;
                     //check pos3_left
                     Tmp_date=tmp2.left_saleDate;
                     Tmp_time=tmp2.startTimes;
-                    total_time=0;
-                    for (int i=0;i<pos3;i++)
-                        total_time+=tmp2.travelTimes[i];
-                    for (int i=1;i<=pos3;i++)
-                        total_time+=tmp2.stopoverTimes[i-1];
+                    total_time=tmp2.sum_travelTimes[pos3]+tmp2.sum_stopoverTimes[pos3];
                     add_time(Tmp_date,Tmp_time,total_time);
                     if (Tmp_time<tmp_time) 
                     {
@@ -1178,30 +1270,23 @@ void query_transfer()
                     T2=cal_time(tmp_date,tmp_time,Tmp_date,Tmp_time)/(24*60);
                     tmp_order.d2=tmp_date;
                     tmp_order.t2=tmp_time;
-                    for (int i=pos3;i<pos4;i++)
-                        add_time(tmp_date,tmp_time,tmp2.travelTimes[i]);
-                    for (int i=pos3+1;i<pos4;i++)
-                        add_time(tmp_date,tmp_time,tmp2.stopoverTimes[i-1]);
+                    int tmp_total_time=tmp2.sum_travelTimes[pos4]-tmp2.sum_travelTimes[pos3];
+                    tmp_total_time+=tmp2.sum_stopoverTimes[pos4-1]-tmp2.sum_stopoverTimes[pos3];
+                    add_time(tmp_date,tmp_time,tmp_total_time);
                     tmp_order.pos1_s=pos1;
                     tmp_order.pos1_t=pos2;
                     tmp_order.pos2_s=pos3;
                     tmp_order.pos2_t=pos4;
-                    tmp_order.travel1_cost=0;
                     tmp_order.travel1_max=100000;
                     int idx1=calc_date(tmp1.left_saleDate)+T1;
+                    tmp_order.travel1_cost=tmp1.sum_prices[pos2]-tmp1.sum_prices[pos1];
                     for (int i=pos1;i<pos2;i++)
-                    {
-                        tmp_order.travel1_cost+=tmp1.prices[i];
                         if (tmp1.ticket_num[idx1][i]<tmp_order.travel1_max) tmp_order.travel1_max=tmp1.ticket_num[idx1][i];
-                    }
-                    tmp_order.travel2_cost=0;
+                    tmp_order.travel2_cost=tmp2.sum_prices[pos4]-tmp2.sum_prices[pos3];
                     tmp_order.travel2_max=100000;
                     int idx2=calc_date(tmp2.left_saleDate)+T2;
                     for (int i=pos3;i<pos4;i++)
-                    {
-                        tmp_order.travel2_cost+=tmp2.prices[i];
                         if (tmp2.ticket_num[idx2][i]<tmp_order.travel2_max) tmp_order.travel2_max=tmp2.ticket_num[idx2][i];
-                    }
                     tmp_order.travel_time=cal_time(tmp_date,tmp_time,tmp_order.d1,tmp_order.t1);
                     if (!flag_find)
                     {
@@ -1210,6 +1295,7 @@ void query_transfer()
                     } else if (order2_check(tmp_order,ans,q)) ans=tmp_order;
                 }
         }
+    }
     if (!flag_find) 
     {
         printf("%d\n",0);
@@ -1242,10 +1328,9 @@ void query_transfer()
         printf(" ");
         tmp_d=ans.d1;
         tmp_t=ans.t1;
-        for (int i=ans.pos1_s;i<ans.pos1_t;i++)
-            add_time(tmp_d,tmp_t,ans.ans_train1.travelTimes[i]);
-        for (int i=ans.pos1_s+1;i<ans.pos1_t;i++)
-            add_time(tmp_d,tmp_t,ans.ans_train1.stopoverTimes[i-1]);
+        int tmp_total_time=ans.ans_train1.sum_travelTimes[ans.pos1_t]-ans.ans_train1.sum_travelTimes[ans.pos1_s];
+        tmp_total_time+=ans.ans_train1.sum_stopoverTimes[ans.pos1_t-1]-ans.ans_train1.sum_stopoverTimes[ans.pos1_s];
+        add_time(tmp_d,tmp_t,tmp_total_time);
         if (tmp_d.month<10) printf("0");
         printf("%d-",tmp_d.month);
         if (tmp_d.day<10) printf("0");
@@ -1281,10 +1366,9 @@ void query_transfer()
         printf(" ");
         tmp_d=ans.d2;
         tmp_t=ans.t2;
-        for (int i=ans.pos2_s;i<ans.pos2_t;i++)
-            add_time(tmp_d,tmp_t,ans.ans_train2.travelTimes[i]);
-        for (int i=ans.pos2_s+1;i<ans.pos2_t;i++)
-            add_time(tmp_d,tmp_t,ans.ans_train2.stopoverTimes[i-1]);
+        int tmp_total_time=ans.ans_train2.sum_travelTimes[ans.pos2_t]-ans.ans_train2.sum_travelTimes[ans.pos2_s];
+        tmp_total_time+=ans.ans_train2.sum_stopoverTimes[ans.pos2_t-1]-ans.ans_train2.sum_stopoverTimes[ans.pos2_s];
+        add_time(tmp_d,tmp_t,tmp_total_time);
         if (tmp_d.month<10) printf("0");
         printf("%d-",tmp_d.month);
         if (tmp_d.day<10) printf("0");
@@ -1338,21 +1422,21 @@ void buy_ticket()
         op=getchar();
     }
     user cur;
-    map<user_id,user>::iterator it1=user_structure.find(cur_id);
-    if (it1==user_structure.end()||(!it1->second.login_flag))
+    LRUBPTree<user_id,user>::iterator it1=user_structure.find(cur_id);
+    if (it1==user_structure.end()||(!it1.data().login_flag))
     {
         printf("%d\n",-1);
         return;
     }
-    cur=it1->second;
+    cur=it1.data();
     train tmp;
-    map<train_id,train>::iterator it2=train_structure.find(tmp_id);
+    LRUBPTree<train_id,train>::iterator it2=train_structure.find(tmp_id);
     if (it2==train_structure.end())
     {
         printf("%d\n",-1);
         return;
     }
-    tmp=it2->second;
+    tmp=it2.data();
     if (tmp.current_status!=1)
     {
         printf("%d\n",-1);
@@ -1371,10 +1455,8 @@ void buy_ticket()
     }
     date tmp_date=tmp.left_saleDate;
     time tmp_time=tmp.startTimes;
-    for (int i=0;i<pos1;i++)
-        add_time(tmp_date,tmp_time,tmp.travelTimes[i]);
-    for (int i=1;i<=pos1;i++)
-        add_time(tmp_date,tmp_time,tmp.stopoverTimes[i-1]);
+    int tmp_total_time=tmp.sum_travelTimes[pos1]+tmp.sum_stopoverTimes[pos1];
+    add_time(tmp_date,tmp_time,tmp_total_time);
     if (h<tmp_date)
     {
         printf("%d\n",-1);
@@ -1383,10 +1465,8 @@ void buy_ticket()
     int T=cal_time(h,tmp_time,tmp_date,tmp_time)/(24*60);
     tmp_date=tmp.right_saleDate;
     tmp_time=tmp.startTimes;
-    for (int i=0;i<pos1;i++)
-        add_time(tmp_date,tmp_time,tmp.travelTimes[i]);
-    for (int i=1;i<=pos1;i++)
-        add_time(tmp_date,tmp_time,tmp.stopoverTimes[i-1]);
+    tmp_total_time=tmp.sum_travelTimes[pos1]+tmp.sum_stopoverTimes[pos1];
+    add_time(tmp_date,tmp_time,tmp_total_time);
     if (tmp_date<h)
     {
         printf("%d\n",-1);
@@ -1403,12 +1483,10 @@ void buy_ticket()
         if (tmp.ticket_num[tmp_idx][i]<r) r=tmp.ticket_num[tmp_idx][i];
     if (r>=num)
     {
-        int sum=0;
-        for (int i=pos1;i<pos2;i++)
-            sum+=tmp.prices[i];
+        int sum=tmp.sum_prices[pos2]-tmp.sum_prices[pos1];
         printf("%lld\n",1LL*sum*num);
         for (int i=pos1;i<pos2;i++)
-            it2->second.ticket_num[tmp_idx][i]-=num;
+            it2.data(true).ticket_num[tmp_idx][i]-=num;
         order tmp_order;
         tmp_order.t=tmp_id;
         tmp_order.tmp_d=h;
@@ -1423,14 +1501,12 @@ void buy_ticket()
         pair<user_id,int> Tmp;
         Tmp.first=cur_id;
         Tmp.second=-(order_structure.size()+1);
-        order_structure[Tmp]=tmp_order;
+        order_structure.insert(Tmp,tmp_order);
     } else if (!q) printf("%d\n",-1);
     else
     {
         printf("queue\n");
-        int sum=0;
-        for (int i=pos1;i<pos2;i++)
-            sum+=tmp.prices[i];
+        int sum=tmp.sum_prices[pos2]-tmp.sum_prices[pos1];
         order tmp_order;
         tmp_order.t=tmp_id;
         tmp_order.tmp_d=h;
@@ -1445,14 +1521,14 @@ void buy_ticket()
         pair<user_id,int> Tmp;
         Tmp.first=cur_id;
         Tmp.second=-(order_structure.size()+1);
-        order_structure[Tmp]=tmp_order;
+        order_structure.insert(Tmp,tmp_order);
         pair<train_id,int> tmp1;
         tmp1.first=tmp_id;
         tmp1.second=-Tmp.second;
         pair<user_id,order> tmp2;
         tmp2.first=cur_id;
         tmp2.second=tmp_order;
-        alter_structure[tmp1]=tmp2;
+        alter_structure.insert(tmp1,tmp2);
     }
 }
 void query_order()
@@ -1465,27 +1541,27 @@ void query_order()
         if (ch=='u') scanf("%s",cur_id.username);
         ch=getchar();
     }
-    map<user_id,user>::iterator it=user_structure.find(cur_id);
-    if (it==user_structure.end()||(!it->second.login_flag))
+    LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+    if (it==user_structure.end()||(!it.data().login_flag))
     {
         printf("%d\n",-1);
         return;
     }
     pair<user_id,int> tmp;
     tmp.first=cur_id;
-    tmp.second=-2000000;
+    tmp.second=-10000000;
     int cnt=0;
-    for (map<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
+    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
     {
-        if ((it1->first.first<cur_id)||(cur_id<it1->first.first)) break;
+        if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
         ++cnt;
     }
     printf("%d\n",cnt);
     int len;
-    for (map<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
+    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
     {
-        if ((it1->first.first<cur_id)||(cur_id<it1->first.first)) break;
-        order tmp_order=it1->second;
+        if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
+        order tmp_order=it1.data();
         if (tmp_order.status==-1) printf("[refunded] ");
         else if (tmp_order.status==0) printf("[pending] ");
         else printf("[success] ");
@@ -1493,10 +1569,10 @@ void query_order()
         for (int i=0;i<len;i++)
             printf("%c",tmp_order.t.trainID[i]);
         printf(" ");
-        map<train_id,train>::iterator it2=train_structure.find(tmp_order.t);
-        len=strlen(it2->second.stations[tmp_order.pos_s].station_name);
+        LRUBPTree<train_id,train>::iterator it2=train_structure.find(tmp_order.t);
+        len=strlen(it2.data().stations[tmp_order.pos_s].station_name);
         for (int i=0;i<len;i++)
-            printf("%c",it2->second.stations[tmp_order.pos_s].station_name[i]);
+            printf("%c",it2.data().stations[tmp_order.pos_s].station_name[i]);
         printf(" ");
         date tmp_date=tmp_order.tmp_d;
         time tmp_time=tmp_order.tmp_t;
@@ -1509,14 +1585,13 @@ void query_order()
         if (tmp_time.minute<10) printf("0");
         printf("%d ",tmp_time.minute);
         printf("-> ");
-        len=strlen(it2->second.stations[tmp_order.pos_t].station_name);
+        len=strlen(it2.data().stations[tmp_order.pos_t].station_name);
         for (int i=0;i<len;i++)
-            printf("%c",it2->second.stations[tmp_order.pos_t].station_name[i]);
+            printf("%c",it2.data().stations[tmp_order.pos_t].station_name[i]);
         printf(" ");
-        for (int i=tmp_order.pos_s;i<tmp_order.pos_t;i++)
-            add_time(tmp_date,tmp_time,it2->second.travelTimes[i]);
-        for (int i=tmp_order.pos_s+1;i<tmp_order.pos_t;i++)
-            add_time(tmp_date,tmp_time,it2->second.stopoverTimes[i-1]);
+        int tmp_total_time=it2.data().sum_travelTimes[tmp_order.pos_t]-it2.data().sum_travelTimes[tmp_order.pos_s];
+        tmp_total_time+=it2.data().sum_stopoverTimes[tmp_order.pos_t-1]-it2.data().sum_stopoverTimes[tmp_order.pos_s];
+        add_time(tmp_date,tmp_time,tmp_total_time);
         if (tmp_date.month<10) printf("0");
         printf("%d-",tmp_date.month);
         if (tmp_date.day<10) printf("0");
@@ -1540,19 +1615,19 @@ void refund_ticket()
         else if (ch=='n') scanf("%d",&pos);
         ch=getchar();
     }
-    map<user_id,user>::iterator it=user_structure.find(cur_id);
-    if ((it==user_structure.end())||(!(it->second.login_flag)))
+    LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+    if ((it==user_structure.end())||(!(it.data().login_flag)))
     {
         printf("%d\n",-1);
         return;
     }
     pair<user_id,int> tmp;
     tmp.first=cur_id;
-    tmp.second=-2000000;
-    map<pair<user_id,int>,order>::iterator ans_it;
-    for (map<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
+    tmp.second=-10000000;
+    LRUBPTree<pair<user_id,int>,order>::iterator ans_it;
+    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
     {
-        if ((it1->first.first<cur_id)||(cur_id<it1->first.first)) break;
+        if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
         --pos;
         if (pos==0)
         {
@@ -1565,46 +1640,46 @@ void refund_ticket()
         printf("%d\n",-1);
         return;
     }
-    if (ans_it->second.status==-1)
+    if (ans_it.data().status==-1)
     {
         printf("%d\n",-1);
         return;
     }
     printf("%d\n",0);
-    int op=ans_it->second.status;
-    ans_it->second.status=-1;
-    map<train_id,train>::iterator train_it=train_structure.find(ans_it->second.t);
+    int op=ans_it.data().status;
+    ans_it.data(true).status=-1;
+    LRUBPTree<train_id,train>::iterator train_it=train_structure.find(ans_it.data().t);
     if (op==1)
     {
-        for (int i=ans_it->second.pos_s;i<ans_it->second.pos_t;i++)
-            train_it->second.ticket_num[ans_it->second.idx][i]+=ans_it->second.num;
+        for (int i=ans_it.data().pos_s;i<ans_it.data().pos_t;i++)
+            train_it.data(true).ticket_num[ans_it.data().idx][i]+=ans_it.data().num;
     }
     pair<train_id,int> tmp1;
-    tmp1.first=ans_it->second.t;
-    tmp1.second=-ans_it->first.second;
-    map<pair<train_id,int>,pair<user_id,order> >::iterator tmp_it=alter_structure.find(tmp1);
-    if (tmp_it!=alter_structure.end()) tmp_it->second.second.status=-1;
+    tmp1.first=ans_it.data().t;
+    tmp1.second=-ans_it.key().second;
+    LRUBPTree<pair<train_id,int>,pair<user_id,order> >::iterator tmp_it=alter_structure.find(tmp1);
+    if (tmp_it!=alter_structure.end()) tmp_it.data(true).second.status=-1;
     if (op!=1) return;
-    tmp1.second=-200000;
-    for (map<pair<train_id,int>,pair<user_id,order> >::iterator alter_it=alter_structure.lower_bound(tmp1);alter_it!=alter_structure.end();alter_it++)
+    tmp1.second=-10000000;
+    for (LRUBPTree<pair<train_id,int>,pair<user_id,order> >::iterator alter_it=alter_structure.lower_bound(tmp1);alter_it!=alter_structure.end();alter_it++)
     {
-        if ((alter_it->first.first<tmp1.first)||(tmp1.first<alter_it->first.first)) break;
-        pair<user_id,order> now=alter_it->second;
-        if (now.second.idx!=ans_it->second.idx) continue;
+        if ((alter_it.key().first<tmp1.first)||(tmp1.first<alter_it.key().first)) break;
+        pair<user_id,order> now=alter_it.data();
+        if (now.second.idx!=ans_it.data().idx) continue;
         if (now.second.status!=0) continue;
         bool flag=true;
         for (int i=now.second.pos_s;i<now.second.pos_t;i++)
-            if (train_it->second.ticket_num[now.second.idx][i]<now.second.num) flag=false;
+            if (train_it.data().ticket_num[now.second.idx][i]<now.second.num) flag=false;
         if (flag)
         {
             for (int i=now.second.pos_s;i<now.second.pos_t;i++)
-                train_it->second.ticket_num[now.second.idx][i]-=now.second.num;
-            alter_it->second.second.status=1;
+                train_it.data(true).ticket_num[now.second.idx][i]-=now.second.num;
+            alter_it.data(true).second.status=1;
             pair<user_id,int> q;
             q.first=now.first;
-            q.second=-(alter_it->first.second);
-            map<pair<user_id,int>,order>::iterator itt=order_structure.find(q);
-            itt->second.status=1;
+            q.second=-(alter_it.key().second);
+            LRUBPTree<pair<user_id,int>,order>::iterator itt=order_structure.find(q);
+            itt.data(true).status=1;
         }
     }
 }
@@ -1648,8 +1723,8 @@ int main()
             case 14:clean();break;
             case 15:
             {
-                for (map<user_id,user>::iterator it=user_structure.begin();it!=user_structure.end();it++)
-                    it->second.login_flag=false;
+                for (LRUBPTree<user_id,user>::iterator it=user_structure.begin();it!=user_structure.end();it++)
+                    it.data(true).login_flag=false;
                 printf("bye\n");
                 return 0;
             }
