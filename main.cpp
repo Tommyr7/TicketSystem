@@ -21,7 +21,7 @@ const int modp2=100000007;
 #define time my_time
 using namespace std;
 const char instruction_name[16][15]={"add_user","login","logout","query_profile","modify_profile","add_train","release_train","query_train","delete_train","query_ticket","query_transfer","buy_ticket","query_order","refund_ticket","clean","exit"};
-int to[300][40],instruction_id[300],cnt;
+int to[300][30],instruction_id[300],cnt;
 struct date
 {
     int month,day;
@@ -492,7 +492,7 @@ void pre_work()
         int len=strlen(instruction_name[i]);
         for (int j=0;j<len;j++)
         {
-            int t=instruction_name[i][j]-90;
+            int t=instruction_name[i][j]-'_'+1;
             if (to[pos][t]==0) to[pos][t]=++cnt;
             pos=to[pos][t];
         }
@@ -1704,7 +1704,7 @@ int main()
         scanf("%s",op);
         op_len=strlen(op);
         for (int i=0;i<op_len;i++)
-            pos=to[pos][op[i]-90];
+            pos=to[pos][op[i]-'_'+1];
         int type=instruction_id[pos];
         switch(type)
         {
