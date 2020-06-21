@@ -373,15 +373,25 @@ protected:
     void fitsize_leaf() {
         if (cache_leaf.size() > cache_leaf.get_threshold()) {
             auto tmp = cache_leaf.begin();
-            update_leaf(&(tmp->val));
-            cache_leaf.erase(tmp);
+            int t = cache_leaf.size() >> 1;
+            while (t--) {
+                auto tp = tmp->later;
+                update_leaf(&(tmp->val));
+                cache_leaf.erase(tmp);
+                tmp = tp;
+            }
         }
     }
     void fitsize_inner() {
         if (cache_inner.size() > cache_inner.get_threshold()) {
             auto tmp = cache_inner.begin();
-            update_inner(&(tmp->val));
-            cache_inner.erase(tmp);
+            int t = cache_inner.size() >> 1;
+            while (t--) {
+                auto tp = tmp->later;
+                update_inner(&(tmp->val));
+                cache_inner.erase(tmp);
+                tmp = tp;
+            }
         }
     }
     leaf_ptr reserve_leaf(leaf_ptr p) {
@@ -399,12 +409,17 @@ protected:
         return ans;
     }
 
-    void fitsize_data() {
+void fitsize_data() {
         if (cache_data.size() > cache_data.get_threshold()) {
             auto tmp = cache_data.begin();
-            if (tmp->updated)
-                update_data(tmp->val.first, tmp->val.second);
-            cache_data.erase(tmp);
+            int t = cache_data.size() >> 1;
+            while (t--) {
+                auto tp = tmp->later;
+                if (tmp->updated)
+                    update_data(tmp->val.first, tmp->val.second);
+                cache_data.erase(tmp);
+                tmp = tp;
+            }
         }
     }
     loc_ptr save_data(const data_type& d) {
@@ -1274,8 +1289,13 @@ protected:
             if (load_base(id)==LEAF) c = request_leaf(id);
             else c = request_inner(id);
             ans = __lower_bound(c, k);
-            if (s < i->key_num && ans == end())
-                ans = __find(i, i->keys[s]);
+            if (s < i->key_num && ans == end()) {
+                base_ptr d;
+                loc_ptr t = i->child_id[s+1];
+                if (load_base(t)==LEAF) d = request_leaf(t);
+                else d = request_inner(t);
+                ans = __find(d, i->keys[s]);
+            }
         }
         else {
             auto l = static_cast<leaf_ptr>(p);

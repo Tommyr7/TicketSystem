@@ -138,16 +138,14 @@ void add_time(date &now_date,time &now_time,int val)
         ++tmp;
         now_time.hour-=24;
     }
-    while (tmp--)
+    if (tmp==0) return;
+    now_date.day+=tmp;
+    int k;
+    if (now_date.month==7||now_date.month==8) k=31; else k=30;
+    if (now_date.day>k)
     {
-        ++now_date.day;
-        int k;
-        if (now_date.month==7||now_date.month==8) k=31; else k=30;
-        if (now_date.day>k)
-        {
-            now_date.day=1;
-            ++now_date.month;
-        }
+        now_date.day-=k;
+        ++now_date.month;
     }
 }
 int cal_time(date &a_date,time &a_time,date &b_date,time &b_time)
@@ -1234,7 +1232,6 @@ void query_transfer()
                     //check pos1_right
                     tmp_date=itt1.data().right_saleDate;
                     tmp_time=itt1.data().startTimes;
-                    total_time=itt1.data().sum_travelTimes[pos1]+itt1.data().sum_stopoverTimes[pos1];
                     add_time(tmp_date,tmp_time,total_time);
                     if (tmp_date<h) continue;
 
@@ -1256,7 +1253,6 @@ void query_transfer()
                     //check pos3_left
                     Tmp_date=itt2.data().left_saleDate;
                     Tmp_time=itt2.data().startTimes;
-                    total_time=itt2.data().sum_travelTimes[pos3]+itt2.data().sum_stopoverTimes[pos3];
                     add_time(Tmp_date,Tmp_time,total_time);
                     if (Tmp_time<tmp_time) 
                     {
