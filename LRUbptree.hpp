@@ -17,7 +17,7 @@
 #endif
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
-#define BLOCK_SIZE 64
+#define BLOCK_SIZE 128
 enum NODE_TYPE {LEAF, INNER};
 
 template <typename Pair>
