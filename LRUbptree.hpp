@@ -556,9 +556,7 @@ public:
 protected:
     loc_ptr new_leaf_block() {return node_visitor.write(leaf_node());}
     loc_ptr new_inner_block() {
-        loc_ptr ans = new_leaf_block();
-        node_visitor.write(ans, inner_node());
-        return ans;
+        return node_visitor.write(inner_node());
     }
     void delete_block(base_ptr p) {
         node_visitor.deallocate(p->pos);
