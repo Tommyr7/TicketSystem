@@ -490,9 +490,9 @@ public:
 public:
     LRUBPTree(const std::string& ip, const std::string& dp, bool new_tree = false)
         : header(),
-          cache_leaf(3000, 5000, hasher_leaf(), key_equal_leaf()),
-          cache_inner(3000, 5000, hasher_inner(), key_equal_inner()),
-          cache_data(1000, 1500, hasher_data(), key_equal_data()) {
+          cache_leaf(1000, 1500, hasher_leaf(), key_equal_leaf()),
+          cache_inner(1000, 1500, hasher_inner(), key_equal_inner()),
+          cache_data(500, 750, hasher_data(), key_equal_data()) {
         if (new_tree) {
             node_visitor.initialize_path(ip);
             data_visitor.initialize_path(dp);
@@ -507,9 +507,9 @@ public:
     LRUBPTree(const std::string& ip, const std::string& dp,
             const key_compare& cmp, bool new_tree = false)
         : header(cmp),
-          cache_leaf(3000, 5000, hasher_leaf(), key_equal_leaf()),
-          cache_inner(3000, 5000, hasher_inner(), key_equal_inner()),
-          cache_data(1000, 1500, hasher_data(), key_equal_data()) {
+          cache_leaf(1000, 1500, hasher_leaf(), key_equal_leaf()),
+          cache_inner(1000, 1500, hasher_inner(), key_equal_inner()),
+          cache_data(500, 750, hasher_data(), key_equal_data()) {
         if (new_tree) {
             node_visitor.initialize_path(ip);
             data_visitor.initialize_path(dp);
