@@ -1685,11 +1685,11 @@ void refund_ticket()
 }
 void clean()
 {
-    user_structure.clear();
-    train_structure.clear();
-    station_structure.clear();
-    order_structure.clear();
-    alter_structure.clear();
+    user_structure.clean();
+    train_structure.clean();
+    station_structure.clean();
+    order_structure.clean();
+    alter_structure.clean();
     printf("%d\n",0);
 }
 int main()

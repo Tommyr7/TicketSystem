@@ -345,8 +345,8 @@ namespace ddl {
         void delete_file() {
             _M_src_file.close();
             std::remove(path.c_str());
-            path.clear();
         }
+        std::string get_path() const {return path;}
     protected:
         SL free_list() {
             _M_src_file.seekg(0, std::ios::beg);
@@ -559,6 +559,7 @@ namespace ddl {
         }
         ~cache() {
             clear();
+            operator delete(header);
         }
 
         node* begin() {return header->later;}
@@ -640,17 +641,18 @@ namespace ddl {
             __rehash(new_size);
         }
         void clear() {
-            for (size_type i = 0, it = buckets.size(); i < it; ++i) {
-                node* cur = buckets[i];
-                while (cur != 0) {
-                    node* next = cur->next;
-                    destroy_node(cur);
-                    cur = next;
+            if (size()) {
+                for (size_type i = 0, it = buckets.size(); i < it; ++i) {
+                    node* cur = buckets[i];
+                    while (cur != 0) {
+                        node* next = cur->next;
+                        destroy_node(cur);
+                        cur = next;
+                    }
+                    buckets[i] = 0;
                 }
-                buckets[i] = 0;
+                _M_num_elems = 0;
             }
-            _M_num_elems = 0;
-            operator delete(header);
         }
     };
 }

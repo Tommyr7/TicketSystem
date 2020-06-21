@@ -532,31 +532,34 @@ public:
         }
     }
     ~LRUBPTree() {
-        /*
-        for (auto i = cache_inner.begin();
-            i != cache_inner.end();
-            i = i->later) {
-            update_inner(&(i->val));
+        if (cache_inner.size()) {
+            for (auto i = cache_inner.begin();
+                 i != cache_inner.end();
+                 i = i->later) {
+                update_inner(&(i->val));
+            }
+            cache_inner.clear();
         }
-        cache_inner.clear();
-        for (auto i = cache_leaf.begin();
-            i != cache_leaf.end();
-            i = i->later) {
-            update_leaf(&(i->val));
+        if (cache_leaf.size()) {
+            for (auto i = cache_leaf.begin();
+                 i != cache_leaf.end();
+                 i = i->later) {
+                update_leaf(&(i->val));
+            }
+            cache_leaf.clear();
         }
-        cache_leaf.clear();
-        for (auto i = cache_data.begin();
-            i != cache_data.end();
-            i = i->later) {
-            if (i->updated)
-                update_data(i->val.first, i->val.second);
+        if (cache_data.size()) {
+            for (auto i = cache_data.begin();
+                 i != cache_data.end();
+                 i = i->later) {
+                if (i->updated)
+                    update_data(i->val.first, i->val.second);
+            }
+            cache_data.clear();
         }
-        cache_data.clear();
         update_header();
         node_visitor.delink();
         data_visitor.delink();
-         */
-        clear();
     }
 protected:
     loc_ptr new_leaf_block() {return node_visitor.write(leaf_node());}
@@ -1399,7 +1402,6 @@ public:
     }
 
     void clear() {
-        /*
         if (header._M_root) {
             __clear_loop(root());
             header._M_root = 0;
@@ -1408,12 +1410,25 @@ public:
             header._M_tail_leaf = 0;
             header._M_root_type = LEAF;
         }
-         */
+    }
+    void clean() {
         cache_inner.clear();
         cache_leaf.clear();
         cache_data.clear();
+
+        std::string node_path = node_visitor.get_path();
         node_visitor.delete_file();
+        std::string data_path = data_visitor.get_path();
         data_visitor.delete_file();
+        node_visitor.initialize_path(node_path);
+        data_visitor.initialize_path(data_path);
+
+        header._M_root = 0;
+        header._M_item_count = 0;
+        header._M_head_leaf = 0;
+        header._M_tail_leaf = 0;
+        header._M_root_type = LEAF;
+        node_visitor.set_head(header);
     }
 };
 
