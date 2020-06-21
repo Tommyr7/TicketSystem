@@ -333,7 +333,7 @@ struct train
     date left_saleDate,right_saleDate;
     char type;
     int current_status;
-    int ticket_num[103][103];
+    int ticket_num[95][103];
     train()
     {
         memset(trainID,0,sizeof(trainID));
