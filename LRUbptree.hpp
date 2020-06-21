@@ -16,7 +16,7 @@
 #   include "gadgets.h"
 #endif
 
-#define BLOCK_SIZE 1024
+#define BLOCK_SIZE 2048
 #define CACHE_INITIAL_SIZE_BLOCK 60
 #define CACHE_MAX_SIZE_BLOCK 90
 #define CACHE_INNITIAL_SIZE_DATA 40
