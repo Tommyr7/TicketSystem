@@ -16,11 +16,11 @@
 #   include "gadgets.h"
 #endif
 
-#define BLOCK_SIZE 4096
-#define CACHE_INITIAL_SIZE_BLOCK 30
-#define CACHE_MAX_SIZE_BLOCK 40
-#define CACHE_INNITIAL_SIZE_DATA 200
-#define CACHE_MAX_SIZE_DATA 250
+#define BLOCK_SIZE 1024
+#define CACHE_INITIAL_SIZE_BLOCK 40
+#define CACHE_MAX_SIZE_BLOCK 60
+#define CACHE_INNITIAL_SIZE_DATA 40
+#define CACHE_MAX_SIZE_DATA 60
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 enum NODE_TYPE {LEAF, INNER};
