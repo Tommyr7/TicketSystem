@@ -480,7 +480,7 @@ bool check_new_file(const string &path)
 }
 LRUBPTree<user_id,user> user_structure(__File1,__File2,check_new_file(__File1));
 LRUBPTree<train_id,train> train_structure(__File3,__File4,check_new_file(__File3));
-LRUBPTree<pair<station,train_id>,int> station_structure(__File5,__File6,check_new_file(__File5));
+LRUBPTree<pair<station,train_id>,char> station_structure(__File5,__File6,check_new_file(__File5));
 LRUBPTree<pair<user_id,int>,order> order_structure(__File7,__File8,check_new_file(__File7));
 LRUBPTree<pair<train_id,int>,pair<user_id,order> > alter_structure(__File9,__File10,check_new_file(__File9));
 void pre_work()
@@ -917,7 +917,7 @@ void release_train()
         pair<station,train_id> tmp;
         tmp.first=it.data().stations[i];
         tmp.second=it.key();
-        station_structure.insert(tmp,i);
+        station_structure.insert(tmp,(char)i);
     }
 }
 void query_train()
@@ -1056,7 +1056,7 @@ void query_ticket()
     }
     pair<station,train_id> cur;
     cur.first=s;
-    LRUBPTree<pair<station,train_id>,int>::iterator it,end_it;
+    LRUBPTree<pair<station,train_id>,char>::iterator it,end_it;
     int cnt=0;
     psgi::vector<ans1_order> ans;
     ans.clear();
@@ -1067,7 +1067,7 @@ void query_ticket()
         train_id tmp_id=it.key().second;
         LRUBPTree<train_id,train>::iterator itt=train_structure.find(tmp_id);
         if (itt.data().current_status!=1) continue;
-        int pos1=it.data(),pos2=-1;
+        int pos1=(int)it.data(),pos2=-1;
         for (int i=pos1+1;i<itt.data().stationNum;i++)
             if ((!(t<itt.data().stations[i]))&&(!(itt.data().stations[i]<t))) 
             {
@@ -1180,7 +1180,7 @@ void query_transfer()
         }
         op=getchar();
     }
-    LRUBPTree<pair<station,train_id>,int>::iterator it1,it2,end_it=station_structure.end();
+    LRUBPTree<pair<station,train_id>,char>::iterator it1,it2,end_it=station_structure.end();
     pair<station,train_id> cur_s,cur_t;
     cur_s.first=s;
     cur_t.first=t;
