@@ -236,7 +236,6 @@ struct __LRUBPTREE_ITERATOR {
 
     iterator& operator++() {
         if (curslot + 1 < curleaf->key_num) {
-            curleaf = tree->request_leaf(curpos);
             ++curslot;
         }
         else if (curleaf->next != 0) {
@@ -245,7 +244,6 @@ struct __LRUBPTREE_ITERATOR {
             curslot = 0;
         }
         else {
-            curleaf = tree->request_leaf(curpos);
             curslot = curleaf->key_num;
         }
         return *this;
