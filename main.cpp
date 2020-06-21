@@ -1068,11 +1068,12 @@ void query_ticket()
         LRUBPTree<train_id,train>::iterator itt=train_structure.find(tmp_id);
         if (itt.data().current_status!=1) continue;
         int pos1=it.data(),pos2=-1;
-        pair<station,train_id> tmp_pair;
-        tmp_pair.first=t;
-        tmp_pair.second=tmp_id;
-        LRUBPTree<pair<station,train_id>,int>::iterator It=station_structure.find(tmp_pair);
-        if (It!=station_structure.end()) pos2=It.data();
+        for (int i=pos1+1;i<itt.data().stationNum;i++)
+            if ((!(t<itt.data().stations[i]))&&(!(itt.data().stations[i]<t))) 
+            {
+                pos2=i;
+                break;
+            }
         if (pos1!=-1&&pos2!=-1&&pos1<pos2)
         {
             bool flag=true;
@@ -1690,6 +1691,7 @@ void clean()
 int main()
 {
     pre_work();
+int TTT=0;
     while (1)
     {
         char op[17];
@@ -1721,7 +1723,8 @@ int main()
                 for (LRUBPTree<user_id,user>::iterator it=user_structure.begin();it!=user_structure.end();it++)
                     it.data(true).login_flag=false;
                 printf("bye\n");
-                return 0;
+                ++TTT;
+                if (TTT==10) return 0;
             }
         }
     }
