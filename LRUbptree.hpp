@@ -16,12 +16,13 @@
 #   include "gadgets.h"
 #endif
 
-#define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define BLOCK_SIZE 1024
 #define CACHE_INITIAL_SIZE_BLOCK 60
 #define CACHE_MAX_SIZE_BLOCK 90
 #define CACHE_INNITIAL_SIZE_DATA 40
 #define CACHE_MAX_SIZE_DATA 60
+
+#define MAX(a, b) ((a) < (b) ? (b) : (a))
 enum NODE_TYPE {LEAF, INNER};
 
 template <typename Pair>
@@ -317,12 +318,9 @@ private:
     HEADER header;
     base_ptr root() {
         if (header._M_root==0) return nullptr;
-        if (header._M_root_type==LEAF) {
+        if (header._M_root_type==LEAF)
             return request_leaf(header._M_root);
-        }
-        else {
-            return request_inner(header._M_root);
-        }
+        else return request_inner(header._M_root);
     }
 public:
     inline key_compare key_comp() const {return header._M_key_cmp;}
@@ -363,63 +361,34 @@ protected:
         node_visitor.read(loc, p);
     }
     NODE_TYPE load_base(SL loc) {
-        auto tmp = (base_ptr)(operator new (sizeof(node)));
+        auto tmp = (base_ptr)(operator new(sizeof(node)));
         node_visitor.read(loc, tmp);
         NODE_TYPE ans = tmp->_M_type;
-        delete tmp;
+        operator delete(tmp);
         return ans;
     }
 
     void fitsize_leaf() {
         if (cache_leaf.size() > cache_leaf.get_threshold()) {
             auto tmp = cache_leaf.begin();
-            int t = cache_leaf.size() >> 1;
-            while (t--) {
-                auto tp = tmp->later;
-                update_leaf(&(tmp->val));
-                cache_leaf.erase(tmp);
-                tmp = tp;
-            }
+            update_leaf(&(tmp->val));
+            cache_leaf.erase(tmp);
         }
     }
     void fitsize_inner() {
         if (cache_inner.size() > cache_inner.get_threshold()) {
             auto tmp = cache_inner.begin();
-            int t = cache_inner.size() >> 1;
-            while (t--) {
-                auto tp = tmp->later;
-                update_inner(&(tmp->val));
-                cache_inner.erase(tmp);
-                tmp = tp;
-            }
+            update_inner(&(tmp->val));
+            cache_inner.erase(tmp);
         }
     }
-    leaf_ptr reserve_leaf(leaf_ptr p) {
-        auto tmp = cache_leaf.insert(*p);
-        leaf_ptr ans = &(tmp.first->val);
-        destroy_leaf(p);
-        fitsize_leaf();
-        return ans;
-    }
-    inner_ptr reserve_inner(inner_ptr p) {
-        auto tmp = cache_inner.insert(*p);
-        inner_ptr ans = &(tmp.first->val);
-        destroy_inner(p);
-        fitsize_inner();
-        return ans;
-    }
 
-void fitsize_data() {
+    void fitsize_data() {
         if (cache_data.size() > cache_data.get_threshold()) {
             auto tmp = cache_data.begin();
-            int t = cache_data.size() >> 1;
-            while (t--) {
-                auto tp = tmp->later;
-                if (tmp->updated)
-                    update_data(tmp->val.first, tmp->val.second);
-                cache_data.erase(tmp);
-                tmp = tp;
-            }
+            if (tmp->updated)
+                update_data(tmp->val.first, tmp->val.second);
+            cache_data.erase(tmp);
         }
     }
     loc_ptr save_data(const data_type& d) {
@@ -427,7 +396,8 @@ void fitsize_data() {
     }
     loc_ptr reserve_data(const data_type& d) {
         loc_ptr loc = save_data(d);
-        cache_data.insert(std::pair<SL, data_type>(loc, d));
+        auto tmp = cache_data.insert(loc);
+        tmp->val = std::pair<SL, data_type>(loc, d);
         fitsize_data();
         return loc;
     }
@@ -443,33 +413,33 @@ public:
     leaf_ptr request_leaf(SL loc) {
         auto t = cache_leaf.find(loc);
         if (t == cache_leaf.end()) {
-            leaf_ptr tmp = get_leaf();
+            leaf_ptr tmp = &(cache_leaf.insert(loc)->val);
             load_leaf(loc, tmp);
-            t = cache_leaf.insert(*tmp).first;
-            operator delete(tmp);
             fitsize_leaf();
+            return tmp;
         }
         return &(t->val);
     }
     inner_ptr request_inner(SL loc) {
         auto t = cache_inner.find(loc);
         if (t == cache_inner.end()) {
-            inner_ptr tmp = get_inner();
+            inner_ptr tmp = &(cache_inner.insert(loc)->val);
             load_inner(loc, tmp);
-            t = cache_inner.insert(*tmp).first;
-            operator delete(tmp);
             fitsize_inner();
+            return tmp;
         }
         return &(t->val);
     }
     data_type* request_data(SL loc, bool adjust = false) {
         auto t = cache_data.find(loc);
         if (t == cache_data.end()) {
-            auto tmp = (data_type*)(operator new(sizeof(data_type)));
+            auto tt = cache_data.insert(loc);
+            tt->val.first = loc;
+            data_type* tmp = &(tt->val.second);
             load_data(loc, tmp);
-            t = cache_data.insert(std::pair<SL, data_type>(loc, *tmp)).first;
-            operator delete(tmp);
             fitsize_data();
+            if (adjust) tt->updated = true;
+            return tmp;
         }
         if (adjust) {t->updated = true;}
         return &(t->val.second);
@@ -569,7 +539,9 @@ public:
         data_visitor.delink();
     }
 protected:
-    loc_ptr new_leaf_block() {return node_visitor.write(leaf_node());}
+    loc_ptr new_leaf_block() {
+        return node_visitor.write(leaf_node());
+    }
     loc_ptr new_inner_block() {
         return node_visitor.write(inner_node());
     }
@@ -585,16 +557,20 @@ protected:
         }
         delete_block(p);
     }
-    leaf_ptr get_leaf() {
-        auto ans = (leaf_ptr)(operator new (sizeof(leaf_node)));
+    leaf_ptr get_leaf(SL loc) {
+        leaf_ptr ans = &(cache_leaf.insert(loc)->val);
         ans->key_num = 0;
         ans->_M_type = LEAF;
+        ans->pos = loc;
+        ans->prev = 0;
+        ans->next = 0;
         return ans;
     }
-    inner_ptr get_inner() {
-        auto ans = (inner_ptr)(operator new (sizeof(inner_node)));
+    inner_ptr get_inner(SL loc) {
+        inner_ptr ans = &(cache_inner.insert(loc)->val);
         ans->key_num = 0;
         ans->_M_type = INNER;
+        ans->pos = loc;
         return ans;
     }
     void destroy_node(base_ptr p) {
@@ -609,56 +585,44 @@ protected:
             operator delete(i);
         }
     }
-    void destroy_leaf(leaf_ptr p) {
-        psgi::destroy(p);
-        operator delete(p);
-    }
-    void destroy_inner(inner_ptr p) {
-        psgi::destroy(p);
-        operator delete(p);
-    }
 protected:
     void split_leaf(leaf_ptr p, leaf_ptr& new_leaf) {
         int mid = p->key_num >> 1;
-        leaf_ptr newl = get_leaf();
-        newl->pos = new_leaf_block();
-        newl->next = p->next;
+        SL nlb = new_leaf_block();
+        new_leaf = get_leaf(nlb);
+        new_leaf->next = p->next;
 
         std::uninitialized_copy(p->keys + mid,
-                                p->keys + p->key_num, newl->keys);
+                                p->keys + p->key_num, new_leaf->keys);
         psgi::destroy(p->keys + mid, p->keys + p->key_num);
-        std::copy(p->data+mid, p->data+p->key_num, newl->data);
+        std::copy(p->data+mid, p->data+p->key_num, new_leaf->data);
 
-        newl->key_num = p->key_num - mid;
+        new_leaf->key_num = p->key_num - mid;
         p->key_num = mid;
 
-        if (p->next==0) header._M_tail_leaf = newl->pos;
+        if (p->next==0) header._M_tail_leaf = new_leaf->pos;
         else {
-            leaf_ptr tmp = request_leaf(newl->next);
-            tmp->prev = newl->pos;
+            leaf_ptr tmp = request_leaf(new_leaf->next);
+            tmp->prev = new_leaf->pos;
         }
-        p->next = newl->pos;
-        newl->prev = p->pos;
-
-        new_leaf = newl;
+        p->next = new_leaf->pos;
+        new_leaf->prev = p->pos;
     }
     void split_inner(inner_ptr p, inner_ptr& new_inner, key_type& key_split, int slot_add) {
         int mid = p->key_num >> 1;
         bool odd_keys = p->key_num % 2;
         if (!odd_keys && slot_add < mid) --mid;
-        inner_ptr newi = get_inner();
-        newi->pos = new_inner_block();
+        SL nib = new_inner_block();
+        new_inner = get_inner(nib);
 
         std::uninitialized_copy(p->keys + mid + 1,
-                                p->keys + p->key_num, newi->keys);
+                                p->keys + p->key_num, new_inner->keys);
         key_split = p->keys[mid];
         psgi::destroy(p->keys + mid + 1, p->keys + p->key_num);
-        std::copy(p->child_id+mid+1, p->child_id + p->key_num + 1, newi->child_id);
+        std::copy(p->child_id+mid+1, p->child_id + p->key_num + 1, new_inner->child_id);
 
-        newi->key_num = p->key_num - (mid + 1);
+        new_inner->key_num = p->key_num - (mid + 1);
         p->key_num = mid;
-
-        new_inner = newi;
     }
     std::pair<iterator, bool>
     __insert_aux(base_ptr p, const key_type& key, const data_type& data,
@@ -692,12 +656,7 @@ protected:
                                l->data + l->key_num + 1);
             l->data[slot_insert] = reserve_data(data);
             ++l->key_num;
-            if (leaf_split) {
-                key_split = leaf_split->keys[0];
-                if (l == leaf_split)
-                    {l = reserve_leaf(leaf_split);}
-                else reserve_leaf(leaf_split);
-            }
+            if (leaf_split) {key_split = leaf_split->keys[0];}
             return std::pair<iterator, bool>(iterator(l, slot_insert, this), true);
         }
         else {
@@ -735,7 +694,6 @@ protected:
                 else {psgi::construct(i->keys + i->key_num, key_insert);}
                 i->child_id[slot_insert+1] = child_insert;
                 ++i->key_num;
-                if (inner_split) reserve_inner(inner_split);
             }
             return ans;
         }
@@ -745,12 +703,8 @@ protected:
             header._M_root = new_leaf_block();
             header._M_head_leaf = header._M_root;
             header._M_tail_leaf = header._M_root;
-            leaf_ptr rot = get_leaf();
-            rot->prev = 0;
-            rot->next = 0;
-            rot->pos = header._M_root;
-            rot->key_num = 0;
-            reserve_leaf(rot);
+            header._M_root_type = LEAF;
+            get_leaf(header._M_root);
         }
 
         loc_ptr root_split = 0;
@@ -759,15 +713,14 @@ protected:
                 ans = __insert_aux(root(), key, data, key_split, root_split);
 
         if (root_split) {
-            inner_ptr new_root = get_inner();
-            new_root->pos = new_inner_block();
+            SL nir = new_inner_block();
+            inner_ptr new_root = get_inner(nir);
             new_root->key_num = 1;
             psgi::construct(new_root->keys, key_split);
             new_root->child_id[0] = header._M_root;
             new_root->child_id[1] = root_split;
             header._M_root = new_root->pos;
             header._M_root_type = INNER;
-            reserve_inner(new_root);
         }
 
         if (ans.second) {++header._M_item_count;}
@@ -1261,6 +1214,7 @@ protected:
         }
         return l;
     }
+
     iterator __find(base_ptr p, const key_type& k) {
         if (p->_M_type==INNER) {
             auto i = static_cast<inner_node*>(p);

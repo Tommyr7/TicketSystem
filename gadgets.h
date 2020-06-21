@@ -466,16 +466,8 @@ namespace ddl {
     protected:
         node* get_node() {
             auto ans = (node*)(operator new(sizeof(node)));
-            ans->next = 0;
-            ans->later = 0;
-            ans->earlier = 0;
             ans->updated = false;
             return ans;
-        }
-        node* create_node(const value_type& x) {
-            auto n = get_node();
-            psgi::construct(&(n->val), x);
-            return n;
         }
         void destroy_node(node* n) {
             psgi::destroy(&n->val);
@@ -504,20 +496,16 @@ namespace ddl {
             return bkt_num_key(_M_get_key(val), n);
         }
 
-        std::pair<node*, bool> __insert_aux(const value_type& x) {
-            const size_type n = bkt_num(x);
+        node* __insert(const key_type& k) {
+            const size_type n = bkt_num_key(k);
             node* first = buckets[n];
-            for (node* cur = first; cur; cur = cur->next) {
-                if (_M_equals(_M_get_key(cur->val), _M_get_key(x)))
-                    return std::pair<node*, bool>(cur, false);
-            }
-            node* tmp = create_node(x);
+            node* tmp = get_node();
             tmp->next = first;
             link_back(tmp);
             buckets[n] = tmp;
 
             ++_M_num_elems;
-            return std::pair<node*, bool>(tmp, true);
+            return tmp;
         }
         void __rehash(size_type new_size) {
             const size_type old_size = buckets.size();
@@ -585,9 +573,9 @@ namespace ddl {
             }
             else {return end();}
         }
-        std::pair<node*, bool> insert(const value_type& val) {
+        node* insert(const key_type& key) {
             resize(_M_num_elems + 1);
-            return __insert_aux(val);
+            return __insert(key);
         }
         size_type erase(const key_type& key) {
             const size_type n = bkt_num_key(key);
