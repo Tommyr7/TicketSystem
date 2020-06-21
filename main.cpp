@@ -834,7 +834,7 @@ void add_train()
     printf("%d\n",0);
     if (it==train_structure.end())
     {
-        for (int k=0;k<=100;k++)
+        for (int k=0;k<94;k++)
             for (int i=0;i<tmp.stationNum-1;i++)
                 tmp.ticket_num[k][i]=tmp.seatNum;
         for (int i=0;i<tmp.stationNum-1;i++)
@@ -847,7 +847,7 @@ void add_train()
     } else
     {
         it.data(true).current_status=0;
-        for (int k=0;k<=100;k++)
+        for (int k=0;k<94;k++)
             for (int i=0;i<tmp.stationNum-1;i++)
                 tmp.ticket_num[k][i]=tmp.seatNum;
         for (int i=0;i<tmp.stationNum-1;i++)
@@ -891,7 +891,7 @@ void add_train()
         it.data(true).right_saleDate.day=tmp.right_saleDate.day;
         it.data(true).type=tmp.type;
         memset(it.data(true).ticket_num,0,sizeof(it.data().ticket_num));
-        for (int k=0;k<=100;k++)
+        for (int k=0;k<94;k++)
             for (int i=0;i<tmp.stationNum-1;i++)
                 it.data(true).ticket_num[k][i]=tmp.ticket_num[k][i];
     }
