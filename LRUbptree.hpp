@@ -492,7 +492,7 @@ public:
         : header(),
           cache_leaf(60, 90, hasher_leaf(), key_equal_leaf()),
           cache_inner(60, 90, hasher_inner(), key_equal_inner()),
-          cache_data(100, 150, hasher_data(), key_equal_data()) {
+          cache_data(60, 90, hasher_data(), key_equal_data()) {
         if (new_tree) {
             node_visitor.initialize_path(ip);
             data_visitor.initialize_path(dp);
@@ -509,7 +509,7 @@ public:
         : header(cmp),
           cache_leaf(60, 90, hasher_leaf(), key_equal_leaf()),
           cache_inner(60, 90, hasher_inner(), key_equal_inner()),
-          cache_data(100, 150, hasher_data(), key_equal_data()) {
+          cache_data(60, 90, hasher_data(), key_equal_data()) {
         if (new_tree) {
             node_visitor.initialize_path(ip);
             data_visitor.initialize_path(dp);
