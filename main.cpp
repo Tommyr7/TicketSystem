@@ -1691,7 +1691,6 @@ void clean()
 int main()
 {
     pre_work();
-int TTT=0;
     while (1)
     {
         char op[17];
@@ -1723,8 +1722,7 @@ int TTT=0;
                 for (LRUBPTree<user_id,user>::iterator it=user_structure.begin();it!=user_structure.end();it++)
                     it.data(true).login_flag=false;
                 printf("bye\n");
-                ++TTT;
-                if (TTT==10) return 0;
+                return 0;
             }
         }
     }
