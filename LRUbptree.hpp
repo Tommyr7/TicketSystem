@@ -18,6 +18,10 @@
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define BLOCK_SIZE 64
+#define CACHE_INITIAL_SIZE_BLOCK 60
+#define CACHE_MAX_SIZE_BLOCK 90
+#define CACHE_INNITIAL_SIZE_DATA 60
+#define CACHE_MAX_SIZE_DATA 90
 enum NODE_TYPE {LEAF, INNER};
 
 template <typename Pair>
@@ -490,9 +494,12 @@ public:
 public:
     LRUBPTree(const std::string& ip, const std::string& dp, bool new_tree = false)
         : header(),
-          cache_leaf(60, 90, hasher_leaf(), key_equal_leaf()),
-          cache_inner(60, 90, hasher_inner(), key_equal_inner()),
-          cache_data(60, 90, hasher_data(), key_equal_data()) {
+          cache_leaf(CACHE_INITIAL_SIZE_BLOCK, CACHE_MAX_SIZE_BLOCK,
+                  hasher_leaf(), key_equal_leaf()),
+          cache_inner(CACHE_INITIAL_SIZE_BLOCK, CACHE_MAX_SIZE_BLOCK,
+                  hasher_inner(), key_equal_inner()),
+          cache_data(CACHE_INNITIAL_SIZE_DATA, CACHE_MAX_SIZE_DATA,
+                  hasher_data(), key_equal_data()) {
         if (new_tree) {
             node_visitor.initialize_path(ip);
             data_visitor.initialize_path(dp);
@@ -507,9 +514,12 @@ public:
     LRUBPTree(const std::string& ip, const std::string& dp,
             const key_compare& cmp, bool new_tree = false)
         : header(cmp),
-          cache_leaf(60, 90, hasher_leaf(), key_equal_leaf()),
-          cache_inner(60, 90, hasher_inner(), key_equal_inner()),
-          cache_data(60, 90, hasher_data(), key_equal_data()) {
+          cache_leaf(CACHE_INITIAL_SIZE_BLOCK, CACHE_MAX_SIZE_BLOCK,
+                  hasher_leaf(), key_equal_leaf()),
+          cache_inner(CACHE_INITIAL_SIZE_BLOCK, CACHE_MAX_SIZE_BLOCK,
+                  hasher_inner(), key_equal_inner()),
+          cache_data(CACHE_INNITIAL_SIZE_DATA, CACHE_MAX_SIZE_DATA,
+                  hasher_data(), key_equal_data()) {
         if (new_tree) {
             node_visitor.initialize_path(ip);
             data_visitor.initialize_path(dp);
@@ -522,6 +532,7 @@ public:
         }
     }
     ~LRUBPTree() {
+        /*
         for (auto i = cache_inner.begin();
             i != cache_inner.end();
             i = i->later) {
@@ -544,6 +555,8 @@ public:
         update_header();
         node_visitor.delink();
         data_visitor.delink();
+         */
+        clear();
     }
 protected:
     loc_ptr new_leaf_block() {return node_visitor.write(leaf_node());}
@@ -1386,6 +1399,7 @@ public:
     }
 
     void clear() {
+        /*
         if (header._M_root) {
             __clear_loop(root());
             header._M_root = 0;
@@ -1394,6 +1408,12 @@ public:
             header._M_tail_leaf = 0;
             header._M_root_type = LEAF;
         }
+         */
+        cache_inner.clear();
+        cache_leaf.clear();
+        cache_data.clear();
+        node_visitor.delete_file();
+        data_visitor.delete_file();
     }
 };
 

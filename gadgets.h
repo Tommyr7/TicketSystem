@@ -291,15 +291,15 @@ namespace psgi {
 
     // hash settings
 
-    static const int __psgi_num_primes = 28;
+    static const int __psgi_num_primes = 29;
     static const unsigned long __psgi_prime_list[__psgi_num_primes] =
             {
-                    53, 97, 193, 389, 769,
-                    1543, 3079, 6151, 12289, 24593,
-                    49157, 98317, 196613, 393241, 786433,
-                    1572869, 3145739, 6291469, 12582917, 25165843,
-                    50331653, 100663319, 201326611, 402653189, 805306457,
-                    1610612741, 3221225473ul, 4294967291ul
+                    23, 53, 97, 193, 389,
+                    769, 1543, 3079, 6151, 12289,
+                    24593, 49157, 98317, 196613, 393241,
+                    786433, 1572869, 3145739, 6291469, 12582917,
+                    25165843, 50331653, 100663319, 201326611, 402653189,
+                    805306457, 1610612741, 3221225473ul, 4294967291ul
             };
     inline unsigned long __psgi_next_prime(unsigned long n) {
         const unsigned long* first = __psgi_prime_list;
@@ -317,12 +317,15 @@ namespace ddl {
     class __default_file_visitor {
     protected:
         std::fstream _M_src_file;
+        std::string path;
     public:
-        void set_path(const std::string& path) {
+        void set_path(const std::string& pth) {
+            path = pth;
             if (_M_src_file.is_open()) _M_src_file.close();
             _M_src_file.open(path, std::ios::in | std::ios::out | std::ios::binary);
         }
-        void initialize_path(const std::string& path) {
+        void initialize_path(const std::string& pth) {
+            path = pth;
             _M_src_file.open(path, std::ios::in);
             if (!_M_src_file.fail()) {
                 _M_src_file.close();
@@ -338,6 +341,11 @@ namespace ddl {
         }
         void delink() {
             _M_src_file.close();
+        }
+        void delete_file() {
+            _M_src_file.close();
+            std::remove(path.c_str());
+            path.clear();
         }
     protected:
         SL free_list() {
@@ -401,16 +409,6 @@ namespace ddl {
             _M_src_file.seekg(loc + sizeof(SL), std::ios::beg);
             _M_src_file.read(reinterpret_cast<char*>(ans), sizeof(_T2));
         }
-        /*
-        template <typename _T2>
-        void read(_T2* ans) {
-            _M_src_file.read(reinterpret_cast<char*>(ans), sizeof(_T2));
-        }
-        template <typename _T2>
-        void reader_setback(_T2*) {
-            _M_src_file.seekg(-(SL)sizeof(_T2), std::ios::cur);
-        }
-        */
         template <typename _T3>
         void head(_T3* hd) {
             _M_src_file.seekg(sizeof(SL), std::ios::beg);
@@ -561,7 +559,6 @@ namespace ddl {
         }
         ~cache() {
             clear();
-            operator delete(header);
         }
 
         node* begin() {return header->later;}
@@ -575,15 +572,6 @@ namespace ddl {
 
         float load_factor() const {return (float)size()/(float)bucket_count();}
         float max_load_factor() const {return 1.0f;}
-
-        /*
-        void need_updation(const key_type& key) {
-            node* tmp = find(key);
-            if (tmp != end()) {
-                tmp->updated = true;
-            }
-        }
-         */
 
         node* find(const key_type& key) {
             size_type n = bkt_num_key(key);
@@ -662,6 +650,7 @@ namespace ddl {
                 buckets[i] = 0;
             }
             _M_num_elems = 0;
+            operator delete(header);
         }
     };
 }
