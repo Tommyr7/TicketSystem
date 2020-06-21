@@ -1068,25 +1068,24 @@ void query_ticket()
         if (s<it.key().first) break;
         train_id tmp_id=it.key().second;
         LRUBPTree<train_id,train>::iterator itt=train_structure.find(tmp_id);
-        train tmp=itt.data();
-        if (tmp.current_status!=1) continue;
+        if (itt.data().current_status!=1) continue;
         int pos1=-1,pos2=-1;
-        for (int i=0;i<tmp.stationNum;i++)
+        for (int i=0;i<itt.data().stationNum;i++)
         {
-            if ((!(s<tmp.stations[i]))&&(!(tmp.stations[i]<s))) pos1=i;
-            if ((!(t<tmp.stations[i]))&&(!(tmp.stations[i]<t))) pos2=i;
+            if ((!(s<itt.data().stations[i]))&&(!(itt.data().stations[i]<s))) pos1=i;
+            if ((!(t<itt.data().stations[i]))&&(!(itt.data().stations[i]<t))) pos2=i;
         }
         if (pos1!=-1&&pos2!=-1&&pos1<pos2)
         {
             bool flag=true;
-            int val=tmp.sum_travelTimes[pos1]+tmp.sum_stopoverTimes[pos1];
-            date tmp_d=tmp.left_saleDate;
-            time tmp_t=tmp.startTimes;
+            int val=itt.data().sum_travelTimes[pos1]+itt.data().sum_stopoverTimes[pos1];
+            date tmp_d=itt.data().left_saleDate;
+            time tmp_t=itt.data().startTimes;
             add_time(tmp_d,tmp_t,val);
             if (h<tmp_d) flag=false;
             T=cal_time(h,tmp_t,tmp_d,tmp_t)/(24*60);
-            tmp_d=tmp.right_saleDate;
-            tmp_t=tmp.startTimes;
+            tmp_d=itt.data().right_saleDate;
+            tmp_t=itt.data().startTimes;
             add_time(tmp_d,tmp_t,val);
             if (tmp_d<h) flag=false;
             if (flag)
@@ -1099,12 +1098,12 @@ void query_ticket()
                 Tmp.pos_s=pos1;
                 Tmp.pos_t=pos2;
                 Tmp.travel_max=100000;
-                int idx=calc_date(tmp.left_saleDate)+T;
-                Tmp.travel_time=tmp.sum_travelTimes[pos2]-tmp.sum_travelTimes[pos1];
-                Tmp.travel_time+=tmp.sum_stopoverTimes[pos2-1]-tmp.sum_stopoverTimes[pos1];
-                Tmp.travel_cost=tmp.sum_prices[pos2]-tmp.sum_prices[pos1];
+                int idx=calc_date(itt.data().left_saleDate)+T;
+                Tmp.travel_time=itt.data().sum_travelTimes[pos2]-itt.data().sum_travelTimes[pos1];
+                Tmp.travel_time+=itt.data().sum_stopoverTimes[pos2-1]-itt.data().sum_stopoverTimes[pos1];
+                Tmp.travel_cost=itt.data().sum_prices[pos2]-itt.data().sum_prices[pos1];
                 for (int i=pos1;i<pos2;i++)
-                    if (tmp.ticket_num[idx][i]<Tmp.travel_max) Tmp.travel_max=tmp.ticket_num[idx][i];
+                    if (itt.data().ticket_num[idx][i]<Tmp.travel_max) Tmp.travel_max=itt.data().ticket_num[idx][i];
                 ans.push_back(Tmp);
             }
         }
@@ -1192,35 +1191,33 @@ void query_transfer()
     {
         train_id tmp1_train_id=it1.key().second;
         LRUBPTree<train_id,train>::iterator itt1=train_structure.find(tmp1_train_id);
-        train tmp1=itt1.data();
-        if (tmp1.current_status!=1) continue;
+        if (itt1.data().current_status!=1) continue;
         for (it2=station_structure.lower_bound(cur_t);(it2!=end_it)&&(!(t<it2.key().first))&&(!(it2.key().first<t));it2++)
         {
             train_id tmp2_train_id=it2.key().second;
             LRUBPTree<train_id,train>::iterator itt2=train_structure.find(tmp2_train_id);
-            train tmp2=itt2.data();
-            if (tmp2.current_status!=1) continue;
-            if ((!(tmp1<tmp2))&&(!(tmp2<tmp1))) continue;
+            if (itt2.data().current_status!=1) continue;
+            if ((!(itt1.data()<itt2.data()))&&(!(itt2.data()<itt1.data()))) continue;
             int pos1=-1,pos4=-1;
-            for (int i=0;i<tmp1.stationNum;i++)
-                if ((!(tmp1.stations[i]<s))&&(!(s<tmp1.stations[i]))) 
+            for (int i=0;i<itt1.data().stationNum;i++)
+                if ((!(itt1.data().stations[i]<s))&&(!(s<itt1.data().stations[i]))) 
                 {
                     pos1=i;
                     break;
                 }
             if (pos1==-1) continue;
-            for (int i=0;i<tmp2.stationNum;i++)
-                if ((!(tmp2.stations[i]<t))&&(!(t<tmp2.stations[i]))) 
+            for (int i=0;i<itt2.data().stationNum;i++)
+                if ((!(itt2.data().stations[i]<t))&&(!(t<itt2.data().stations[i]))) 
                 {
                     pos4=i;
                     break;
                 }
             if (pos4==-1) continue;
             int T1,T2;
-            for (int pos2=pos1+1;pos2<tmp1.stationNum;pos2++)
+            for (int pos2=pos1+1;pos2<itt1.data().stationNum;pos2++)
                 for (int pos3=0;pos3<pos4;pos3++)
                 {
-                    if ((tmp1.stations[pos2]<tmp2.stations[pos3])||(tmp2.stations[pos3]<tmp1.stations[pos2])) continue;
+                    if ((itt1.data().stations[pos2]<itt2.data().stations[pos3])||(itt2.data().stations[pos3]<itt1.data().stations[pos2])) continue;
                     ans2_order tmp_order;
                     tmp_order.ans_train1_id=tmp1_train_id;
                     tmp_order.ans_train2_id=tmp2_train_id;
@@ -1228,38 +1225,38 @@ void query_transfer()
                     time tmp_time;
                     int total_time;
                     //check pos1_left
-                    tmp_date=tmp1.left_saleDate;
-                    tmp_time=tmp1.startTimes;
-                    total_time=tmp1.sum_travelTimes[pos1]+tmp1.sum_stopoverTimes[pos1];
+                    tmp_date=itt1.data().left_saleDate;
+                    tmp_time=itt1.data().startTimes;
+                    total_time=itt1.data().sum_travelTimes[pos1]+itt1.data().sum_stopoverTimes[pos1];
                     add_time(tmp_date,tmp_time,total_time);
                     if (h<tmp_date) continue;
                     T1=cal_time(h,tmp_time,tmp_date,tmp_time)/(24*60);
                     //check pos1_right
-                    tmp_date=tmp1.right_saleDate;
-                    tmp_time=tmp1.startTimes;
-                    total_time=tmp1.sum_travelTimes[pos1]+tmp1.sum_stopoverTimes[pos1];
+                    tmp_date=itt1.data().right_saleDate;
+                    tmp_time=itt1.data().startTimes;
+                    total_time=itt1.data().sum_travelTimes[pos1]+itt1.data().sum_stopoverTimes[pos1];
                     add_time(tmp_date,tmp_time,total_time);
                     if (tmp_date<h) continue;
 
                     tmp_date=h;
                     tmp_order.d1=tmp_date;
                     tmp_order.t1=tmp_time;
-                    total_time=tmp1.sum_travelTimes[pos2]-tmp1.sum_travelTimes[pos1];
-                    total_time+=tmp1.sum_stopoverTimes[pos2-1]-tmp1.sum_stopoverTimes[pos1];
+                    total_time=itt1.data().sum_travelTimes[pos2]-itt1.data().sum_travelTimes[pos1];
+                    total_time+=itt1.data().sum_stopoverTimes[pos2-1]-itt1.data().sum_stopoverTimes[pos1];
                     add_time(tmp_date,tmp_time,total_time);
                     tmp_order.travel1_time=total_time;
                     //check pos3_right
                     date Tmp_date;
                     time Tmp_time;
-                    Tmp_date=tmp2.right_saleDate;
-                    Tmp_time=tmp2.startTimes;
-                    total_time=tmp2.sum_travelTimes[pos3]+tmp2.sum_stopoverTimes[pos3];
+                    Tmp_date=itt2.data().right_saleDate;
+                    Tmp_time=itt2.data().startTimes;
+                    total_time=itt2.data().sum_travelTimes[pos3]+itt2.data().sum_stopoverTimes[pos3];
                     add_time(Tmp_date,Tmp_time,total_time);
                     if (!check_time(tmp_date,tmp_time,Tmp_date,Tmp_time)) continue;
                     //check pos3_left
-                    Tmp_date=tmp2.left_saleDate;
-                    Tmp_time=tmp2.startTimes;
-                    total_time=tmp2.sum_travelTimes[pos3]+tmp2.sum_stopoverTimes[pos3];
+                    Tmp_date=itt2.data().left_saleDate;
+                    Tmp_time=itt2.data().startTimes;
+                    total_time=itt2.data().sum_travelTimes[pos3]+itt2.data().sum_stopoverTimes[pos3];
                     add_time(Tmp_date,Tmp_time,total_time);
                     if (Tmp_time<tmp_time) 
                     {
@@ -1270,23 +1267,23 @@ void query_transfer()
                     T2=cal_time(tmp_date,tmp_time,Tmp_date,Tmp_time)/(24*60);
                     tmp_order.d2=tmp_date;
                     tmp_order.t2=tmp_time;
-                    int tmp_total_time=tmp2.sum_travelTimes[pos4]-tmp2.sum_travelTimes[pos3];
-                    tmp_total_time+=tmp2.sum_stopoverTimes[pos4-1]-tmp2.sum_stopoverTimes[pos3];
+                    int tmp_total_time=itt2.data().sum_travelTimes[pos4]-itt2.data().sum_travelTimes[pos3];
+                    tmp_total_time+=itt2.data().sum_stopoverTimes[pos4-1]-itt2.data().sum_stopoverTimes[pos3];
                     add_time(tmp_date,tmp_time,tmp_total_time);
                     tmp_order.pos1_s=pos1;
                     tmp_order.pos1_t=pos2;
                     tmp_order.pos2_s=pos3;
                     tmp_order.pos2_t=pos4;
                     tmp_order.travel1_max=100000;
-                    int idx1=calc_date(tmp1.left_saleDate)+T1;
-                    tmp_order.travel1_cost=tmp1.sum_prices[pos2]-tmp1.sum_prices[pos1];
+                    int idx1=calc_date(itt1.data().left_saleDate)+T1;
+                    tmp_order.travel1_cost=itt1.data().sum_prices[pos2]-itt1.data().sum_prices[pos1];
                     for (int i=pos1;i<pos2;i++)
-                        if (tmp1.ticket_num[idx1][i]<tmp_order.travel1_max) tmp_order.travel1_max=tmp1.ticket_num[idx1][i];
-                    tmp_order.travel2_cost=tmp2.sum_prices[pos4]-tmp2.sum_prices[pos3];
+                        if (itt1.data().ticket_num[idx1][i]<tmp_order.travel1_max) tmp_order.travel1_max=itt1.data().ticket_num[idx1][i];
+                    tmp_order.travel2_cost=itt2.data().sum_prices[pos4]-itt2.data().sum_prices[pos3];
                     tmp_order.travel2_max=100000;
-                    int idx2=calc_date(tmp2.left_saleDate)+T2;
+                    int idx2=calc_date(itt2.data().left_saleDate)+T2;
                     for (int i=pos3;i<pos4;i++)
-                        if (tmp2.ticket_num[idx2][i]<tmp_order.travel2_max) tmp_order.travel2_max=tmp2.ticket_num[idx2][i];
+                        if (itt2.data().ticket_num[idx2][i]<tmp_order.travel2_max) tmp_order.travel2_max=itt2.data().ticket_num[idx2][i];
                     tmp_order.travel_time=cal_time(tmp_date,tmp_time,tmp_order.d1,tmp_order.t1);
                     if (!flag_find)
                     {
@@ -1432,33 +1429,31 @@ void buy_ticket()
         return;
     }
     cur=it1.data();
-    train tmp;
     LRUBPTree<train_id,train>::iterator it2=train_structure.find(tmp_id);
     if (it2==train_structure.end())
     {
         printf("%d\n",-1);
         return;
     }
-    tmp=it2.data();
-    if (tmp.current_status!=1)
+    if (it2.data().current_status!=1)
     {
         printf("%d\n",-1);
         return;
     }
     int pos1=-1,pos2=-1;
-    for (int i=0;i<tmp.stationNum;i++)
+    for (int i=0;i<it2.data().stationNum;i++)
     {
-        if ((!(s<tmp.stations[i]))&&(!(tmp.stations[i]<s))) pos1=i;
-        if ((!(t<tmp.stations[i]))&&(!(tmp.stations[i]<t))) pos2=i;
+        if ((!(s<it2.data().stations[i]))&&(!(it2.data().stations[i]<s))) pos1=i;
+        if ((!(t<it2.data().stations[i]))&&(!(it2.data().stations[i]<t))) pos2=i;
     }
     if (pos1==-1||pos2==-1||pos1>=pos2)
     {
         printf("%d\n",-1);
         return;
     }
-    date tmp_date=tmp.left_saleDate;
-    time tmp_time=tmp.startTimes;
-    int tmp_total_time=tmp.sum_travelTimes[pos1]+tmp.sum_stopoverTimes[pos1];
+    date tmp_date=it2.data().left_saleDate;
+    time tmp_time=it2.data().startTimes;
+    int tmp_total_time=it2.data().sum_travelTimes[pos1]+it2.data().sum_stopoverTimes[pos1];
     add_time(tmp_date,tmp_time,tmp_total_time);
     if (h<tmp_date)
     {
@@ -1466,27 +1461,27 @@ void buy_ticket()
         return;
     }
     int T=cal_time(h,tmp_time,tmp_date,tmp_time)/(24*60);
-    tmp_date=tmp.right_saleDate;
-    tmp_time=tmp.startTimes;
-    tmp_total_time=tmp.sum_travelTimes[pos1]+tmp.sum_stopoverTimes[pos1];
+    tmp_date=it2.data().right_saleDate;
+    tmp_time=it2.data().startTimes;
+    tmp_total_time=it2.data().sum_travelTimes[pos1]+it2.data().sum_stopoverTimes[pos1];
     add_time(tmp_date,tmp_time,tmp_total_time);
     if (tmp_date<h)
     {
         printf("%d\n",-1);
         return;
     }
-    if (num>tmp.seatNum)
+    if (num>it2.data().seatNum)
     {
         printf("%d\n",-1);
         return;
     }
-    int tmp_idx=calc_date(tmp.left_saleDate)+T;
+    int tmp_idx=calc_date(it2.data().left_saleDate)+T;
     int r=100000;
     for (int i=pos1;i<pos2;i++)
-        if (tmp.ticket_num[tmp_idx][i]<r) r=tmp.ticket_num[tmp_idx][i];
+        if (it2.data().ticket_num[tmp_idx][i]<r) r=it2.data().ticket_num[tmp_idx][i];
     if (r>=num)
     {
-        int sum=tmp.sum_prices[pos2]-tmp.sum_prices[pos1];
+        int sum=it2.data().sum_prices[pos2]-it2.data().sum_prices[pos1];
         printf("%lld\n",1LL*sum*num);
         for (int i=pos1;i<pos2;i++)
             it2.data(true).ticket_num[tmp_idx][i]-=num;
@@ -1509,7 +1504,7 @@ void buy_ticket()
     else
     {
         printf("queue\n");
-        int sum=tmp.sum_prices[pos2]-tmp.sum_prices[pos1];
+        int sum=it2.data().sum_prices[pos2]-it2.data().sum_prices[pos1];
         order tmp_order;
         tmp_order.t=tmp_id;
         tmp_order.tmp_d=h;
