@@ -1058,12 +1058,12 @@ void query_ticket()
     }
     pair<station,train_id> cur;
     cur.first=s;
-    LRUBPTree<pair<station,train_id>,bool>::iterator it;
+    LRUBPTree<pair<station,train_id>,bool>::iterator it,end_it;
     int cnt=0;
     psgi::vector<ans1_order> ans;
     ans.clear();
     int T;
-    for (it=station_structure.lower_bound(cur);it!=station_structure.end();it++)
+    for (it=station_structure.lower_bound(cur),end_it=station_structure.end();it!=end_it;it++)
     {
         if (s<it.key().first) break;
         train_id tmp_id=it.key().second;
@@ -1182,19 +1182,19 @@ void query_transfer()
         }
         op=getchar();
     }
-    LRUBPTree<pair<station,train_id>,bool>::iterator it1,it2;
+    LRUBPTree<pair<station,train_id>,bool>::iterator it1,it2,end_it=station_structure.end();
     pair<station,train_id> cur_s,cur_t;
     cur_s.first=s;
     cur_t.first=t;
     ans2_order ans;
     bool flag_find=false;
-    for (it1=station_structure.lower_bound(cur_s);(it1!=station_structure.end())&&(!(s<it1.key().first))&&(!(it1.key().first<s));it1++)
+    for (it1=station_structure.lower_bound(cur_s);(it1!=end_it)&&(!(s<it1.key().first))&&(!(it1.key().first<s));it1++)
     {
         train_id tmp1_train_id=it1.key().second;
         LRUBPTree<train_id,train>::iterator itt1=train_structure.find(tmp1_train_id);
         train tmp1=itt1.data();
         if (tmp1.current_status!=1) continue;
-        for (it2=station_structure.lower_bound(cur_t);(it2!=station_structure.end())&&(!(t<it2.key().first))&&(!(it2.key().first<t));it2++)
+        for (it2=station_structure.lower_bound(cur_t);(it2!=end_it)&&(!(t<it2.key().first))&&(!(it2.key().first<t));it2++)
         {
             train_id tmp2_train_id=it2.key().second;
             LRUBPTree<train_id,train>::iterator itt2=train_structure.find(tmp2_train_id);
@@ -1551,14 +1551,15 @@ void query_order()
     tmp.first=cur_id;
     tmp.second=-10000000;
     int cnt=0;
-    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
+    LRUBPTree<pair<user_id,int>,order>::iterator end_it=order_structure.end();
+    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
     {
         if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
         ++cnt;
     }
     printf("%d\n",cnt);
     int len;
-    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
+    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
     {
         if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
         order tmp_order=it1.data();
@@ -1624,8 +1625,8 @@ void refund_ticket()
     pair<user_id,int> tmp;
     tmp.first=cur_id;
     tmp.second=-10000000;
-    LRUBPTree<pair<user_id,int>,order>::iterator ans_it;
-    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=order_structure.end();it1++)
+    LRUBPTree<pair<user_id,int>,order>::iterator ans_it,end_it=order_structure.end();
+    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
     {
         if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
         --pos;
@@ -1657,11 +1658,11 @@ void refund_ticket()
     pair<train_id,int> tmp1;
     tmp1.first=ans_it.data().t;
     tmp1.second=-ans_it.key().second;
-    LRUBPTree<pair<train_id,int>,pair<user_id,order> >::iterator tmp_it=alter_structure.find(tmp1);
+    LRUBPTree<pair<train_id,int>,pair<user_id,order> >::iterator tmp_it=alter_structure.find(tmp1),end_it1=alter_structure.end();
     if (tmp_it!=alter_structure.end()) tmp_it.data(true).second.status=-1;
     if (op!=1) return;
     tmp1.second=-10000000;
-    for (LRUBPTree<pair<train_id,int>,pair<user_id,order> >::iterator alter_it=alter_structure.lower_bound(tmp1);alter_it!=alter_structure.end();alter_it++)
+    for (LRUBPTree<pair<train_id,int>,pair<user_id,order> >::iterator alter_it=alter_structure.lower_bound(tmp1);alter_it!=end_it1;alter_it++)
     {
         if ((alter_it.key().first<tmp1.first)||(tmp1.first<alter_it.key().first)) break;
         pair<user_id,order> now=alter_it.data();
