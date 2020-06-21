@@ -1702,7 +1702,7 @@ int main()
         scanf("%s",op);
         op_len=strlen(op);
         for (int i=0;i<op_len;i++)
-            pos=to[pos][op[i]];
+            pos=to[pos][op[i]-90];
         int type=instruction_id[pos];
         switch(type)
         {
