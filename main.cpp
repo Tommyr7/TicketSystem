@@ -380,7 +380,7 @@ bool operator <(const train &rhs1,const train &rhs2)
 }
 struct ans1_order
 {
-    train ans_train;
+    train_id ans_train_id;
     date d;
     time t;
     int pos_s,pos_t;
@@ -399,12 +399,12 @@ struct ans1_order
 bool cmp1_time(ans1_order &a,ans1_order &b)
 {
     if (a.travel_time!=b.travel_time) return (a.travel_time<b.travel_time);
-    return (a.ans_train<b.ans_train);
+    return (a.ans_train_id<b.ans_train_id);
 }
 bool cmp1_cost(ans1_order &a,ans1_order &b)
 {
     if (a.travel_cost!=b.travel_cost) return (a.travel_cost<b.travel_cost);
-    return (a.ans_train<b.ans_train);
+    return (a.ans_train_id<b.ans_train_id);
 }
 bool order1_check(ans1_order &a,ans1_order &b,bool flag)
 {
@@ -1093,7 +1093,7 @@ void query_ticket()
             {
                 ++cnt;
                 ans1_order Tmp;
-                Tmp.ans_train=tmp;
+                Tmp.ans_train_id=tmp_id;
                 Tmp.d=h;
                 Tmp.t=tmp_t;
                 Tmp.pos_s=pos1;
@@ -1113,9 +1113,9 @@ void query_ticket()
     printf("%d\n",cnt);
     for (int i=0;i<cnt;i++)
     {
-        int len=strlen(ans[i].ans_train.trainID);
+        int len=strlen(ans[i].ans_train_id.trainID);
         for (int j=0;j<len;j++)
-            printf("%c",ans[i].ans_train.trainID[j]);
+            printf("%c",ans[i].ans_train_id.trainID[j]);
         printf(" ");
         len=strlen(s.station_name);
         for (int j=0;j<len;j++)
