@@ -412,7 +412,7 @@ bool order1_check(ans1_order &a,ans1_order &b,bool flag)
 }
 struct ans2_order
 {
-    train ans_train1,ans_train2;
+    train_id ans_train1_id,ans_train2_id;
     date d1,d2;
     time t1,t2;
     int pos1_s,pos1_t,pos2_s,pos2_t;
@@ -437,14 +437,14 @@ bool cmp2_time(ans2_order &a,ans2_order &b)
 {
     if (a.travel_time!=b.travel_time) return (a.travel_time<b.travel_time);
     if (a.travel1_time!=b.travel1_time) return (a.travel1_time<b.travel1_time);
-    return (a.ans_train1<b.ans_train1);
+    return (a.ans_train1_id<b.ans_train1_id);
 }
 bool cmp2_cost(ans2_order &a,ans2_order &b)
 {
     if (a.travel1_cost+a.travel2_cost!=b.travel1_cost+b.travel2_cost)
         return (a.travel1_cost+a.travel2_cost<b.travel1_cost+b.travel2_cost);
     if (a.travel1_time!=b.travel1_time) return (a.travel1_time<b.travel1_time);
-    return (a.ans_train1<b.ans_train1);
+    return (a.ans_train1_id<b.ans_train1_id);
 }
 bool order2_check(ans2_order &a,ans2_order &b,bool flag)
 {
@@ -1222,8 +1222,8 @@ void query_transfer()
                 {
                     if ((tmp1.stations[pos2]<tmp2.stations[pos3])||(tmp2.stations[pos3]<tmp1.stations[pos2])) continue;
                     ans2_order tmp_order;
-                    tmp_order.ans_train1=tmp1;
-                    tmp_order.ans_train2=tmp2;
+                    tmp_order.ans_train1_id=tmp1_train_id;
+                    tmp_order.ans_train2_id=tmp2_train_id;
                     date tmp_date;
                     time tmp_time;
                     int total_time;
@@ -1303,15 +1303,18 @@ void query_transfer()
     }
     int len;
     date tmp_d;
+    LRUBPTree<train_id,train>::iterator itt1,itt2;
+    itt1=train_structure.find(ans.ans_train1_id);
+    itt2=train_structure.find(ans.ans_train2_id);
     time tmp_t;
     {
-        len=strlen(ans.ans_train1.trainID);
+        len=strlen(ans.ans_train1_id.trainID);
         for (int i=0;i<len;i++)
-            printf("%c",ans.ans_train1.trainID[i]);
+            printf("%c",ans.ans_train1_id.trainID[i]);
         printf(" ");
-        len=strlen(ans.ans_train1.stations[ans.pos1_s].station_name);
+        len=strlen(itt1.data().stations[ans.pos1_s].station_name);
         for (int i=0;i<len;i++)
-            printf("%c",ans.ans_train1.stations[ans.pos1_s].station_name[i]);
+            printf("%c",itt1.data().stations[ans.pos1_s].station_name[i]);
         printf(" ");
         if (ans.d1.month<10) printf("0");
         printf("%d-",ans.d1.month);
@@ -1322,14 +1325,14 @@ void query_transfer()
         if (ans.t1.minute<10) printf("0");
         printf("%d ",ans.t1.minute);
         printf("-> ");
-        len=strlen(ans.ans_train1.stations[ans.pos1_t].station_name);
+        len=strlen(itt1.data().stations[ans.pos1_t].station_name);
         for (int i=0;i<len;i++)
-            printf("%c",ans.ans_train1.stations[ans.pos1_t].station_name[i]);
+            printf("%c",itt1.data().stations[ans.pos1_t].station_name[i]);
         printf(" ");
         tmp_d=ans.d1;
         tmp_t=ans.t1;
-        int tmp_total_time=ans.ans_train1.sum_travelTimes[ans.pos1_t]-ans.ans_train1.sum_travelTimes[ans.pos1_s];
-        tmp_total_time+=ans.ans_train1.sum_stopoverTimes[ans.pos1_t-1]-ans.ans_train1.sum_stopoverTimes[ans.pos1_s];
+        int tmp_total_time=itt1.data().sum_travelTimes[ans.pos1_t]-itt1.data().sum_travelTimes[ans.pos1_s];
+        tmp_total_time+=itt1.data().sum_stopoverTimes[ans.pos1_t-1]-itt1.data().sum_stopoverTimes[ans.pos1_s];
         add_time(tmp_d,tmp_t,tmp_total_time);
         if (tmp_d.month<10) printf("0");
         printf("%d-",tmp_d.month);
@@ -1343,13 +1346,13 @@ void query_transfer()
         printf("%d\n",ans.travel1_max);
     }
     {
-        len=strlen(ans.ans_train2.trainID);
+        len=strlen(ans.ans_train2_id.trainID);
         for (int i=0;i<len;i++)
-            printf("%c",ans.ans_train2.trainID[i]);
+            printf("%c",ans.ans_train2_id.trainID[i]);
         printf(" ");
-        len=strlen(ans.ans_train2.stations[ans.pos2_s].station_name);
+        len=strlen(itt2.data().stations[ans.pos2_s].station_name);
         for (int i=0;i<len;i++)
-            printf("%c",ans.ans_train2.stations[ans.pos2_s].station_name[i]);
+            printf("%c",itt2.data().stations[ans.pos2_s].station_name[i]);
         printf(" ");
         if (ans.d2.month<10) printf("0");
         printf("%d-",ans.d2.month);
@@ -1360,14 +1363,14 @@ void query_transfer()
         if (ans.t2.minute<10) printf("0");
         printf("%d ",ans.t2.minute);
         printf("-> ");
-        len=strlen(ans.ans_train2.stations[ans.pos2_t].station_name);
+        len=strlen(itt2.data().stations[ans.pos2_t].station_name);
         for (int i=0;i<len;i++)
-            printf("%c",ans.ans_train2.stations[ans.pos2_t].station_name[i]);
+            printf("%c",itt2.data().stations[ans.pos2_t].station_name[i]);
         printf(" ");
         tmp_d=ans.d2;
         tmp_t=ans.t2;
-        int tmp_total_time=ans.ans_train2.sum_travelTimes[ans.pos2_t]-ans.ans_train2.sum_travelTimes[ans.pos2_s];
-        tmp_total_time+=ans.ans_train2.sum_stopoverTimes[ans.pos2_t-1]-ans.ans_train2.sum_stopoverTimes[ans.pos2_s];
+        int tmp_total_time=itt2.data().sum_travelTimes[ans.pos2_t]-itt2.data().sum_travelTimes[ans.pos2_s];
+        tmp_total_time+=itt2.data().sum_stopoverTimes[ans.pos2_t-1]-itt2.data().sum_stopoverTimes[ans.pos2_s];
         add_time(tmp_d,tmp_t,tmp_total_time);
         if (tmp_d.month<10) printf("0");
         printf("%d-",tmp_d.month);
