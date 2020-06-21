@@ -17,7 +17,7 @@
 #endif
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
-#define BLOCK_SIZE 64
+#define BLOCK_SIZE 1024
 #define CACHE_INITIAL_SIZE_BLOCK 60
 #define CACHE_MAX_SIZE_BLOCK 90
 #define CACHE_INNITIAL_SIZE_DATA 60
@@ -214,12 +214,6 @@ struct __LRUBPTREE_ITERATOR {
         return *this;
     }
 
-    /** different from regular iterator:
-     *  use operator*() or operator->()
-     *  (also key() or data())
-     *  to access and adjust the node in memory
-     *  and use update() to save the change in file
-     */
     const key_type& key() const {
         return curleaf->keys[curslot];
     }
