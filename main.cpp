@@ -66,9 +66,9 @@ bool operator <(const date &rhs1,const date &rhs2)
 }
 int calc_date(date &d)
 {
-    if (d.month==6) return d.day-1;
-    if (d.month==7) return 29+d.day;
-    return 60+d.day;
+    if (d.month==6) return d.day;
+    if (d.month==7) return 30+d.day;
+    return 61+d.day;
 }
 struct time
 {
@@ -165,7 +165,7 @@ int cal_time(date &a_date,time &a_time,date &b_date,time &b_time)
 }
 struct user_id
 {
-    char username[22];
+    char username[23];
     user_id()
     {
         memset(username,0,sizeof(username));
@@ -201,10 +201,10 @@ bool operator <(const user_id &rhs1,const user_id &rhs2)
 }
 struct user
 {
-    char username[22];
+    char username[23];
     pair<int,int> password;
     char name[17];
-    char mailAddr[32];
+    char mailAddr[33];
     int privilege;
     bool login_flag;
     user()
@@ -248,7 +248,7 @@ bool operator <(const user &rhs1,const user &rhs2)
 }
 struct station
 {
-    char station_name[32];
+    char station_name[33];
     station()
     {
         memset(station_name,0,sizeof(station_name));
@@ -284,7 +284,7 @@ bool operator <(const station &rhs1,const station &rhs2)
 }
 struct train_id
 {
-    char trainID[22];
+    char trainID[23];
     train_id()
     {
         memset(trainID,0,sizeof(trainID));
@@ -320,18 +320,18 @@ bool operator <(const train_id &rhs1,const train_id &rhs2)
 }
 struct train
 {
-    char trainID[22];
+    char trainID[23];
     int stationNum;
-    station stations[100];
+    station stations[103];
     int seatNum;
-    int prices[101],sum_prices[101];
+    int prices[103],sum_prices[103];
     time startTimes;
-    int travelTimes[101],sum_travelTimes[101];
-    int stopoverTimes[101],sum_stopoverTimes[101];
+    int travelTimes[103],sum_travelTimes[103];
+    int stopoverTimes[103],sum_stopoverTimes[103];
     date left_saleDate,right_saleDate;
     char type;
     int current_status;
-    int ticket_num[93][101];
+    int ticket_num[94][101];
     train()
     {
         memset(trainID,0,sizeof(trainID));
@@ -517,7 +517,7 @@ void add_user()
         }
         else if (op=='p') 
         {
-            char s[32];
+            char s[37];
             scanf("%s",s);
             int len=strlen(s);
             for (int i=0;i<len;i++)
@@ -561,7 +561,7 @@ void login()
         if (op=='u') scanf("%s",cur_id.username);
         else if (op=='p') 
         {
-            char p[32];
+            char p[33];
             scanf("%s",p);
             int len=strlen(p);
             for (int i=0;i<len;i++)
@@ -652,7 +652,7 @@ void modify_profile()
         else if (op=='u') scanf("%s",tmp_id.username);
         else if (op=='p') 
         {
-            char s[32];
+            char s[33];
             scanf("%s",s);
             int len=strlen(s);
             for (int i=0;i<len;i++)
@@ -741,7 +741,7 @@ void add_train()
         else if (op=='s')
         {
             int pos1=0,pos2=0;
-            char s[3107];
+            char s[3207];
             scanf("%s",s);
             int len=strlen(s);
             for (int i=0;i<len;i++)
@@ -756,7 +756,7 @@ void add_train()
         } else if (op=='p')
         {
             int pos=0;
-            char s[707];
+            char s[3207];
             scanf("%s",s);
             int len=strlen(s);
             for (int i=0;i<len;i++)
@@ -766,7 +766,7 @@ void add_train()
             }
         } else if (op=='x')
         {
-            char s[7];
+            char s[13];
             scanf("%s",s);
             bool flag=false;
             int len=strlen(s);
@@ -781,7 +781,7 @@ void add_train()
         } else if (op=='t')
         {
             int pos=0;
-            char s[607];
+            char s[1207];
             scanf("%s",s);
             int len=strlen(s);
             for (int i=0;i<len;i++)
@@ -792,7 +792,7 @@ void add_train()
         } else if (op=='o')
         {
             int pos=0;
-            char s[607];
+            char s[1207];
             scanf("%s",s);
             int len=strlen(s);
             for (int i=0;i<len;i++)
@@ -802,7 +802,7 @@ void add_train()
             }
         } else if (op=='d')
         {
-            char s[14];
+            char s[20];
             scanf("%s",s);
             int len=strlen(s);
             int pos=0;
@@ -832,7 +832,7 @@ void add_train()
     printf("%d\n",0);
     if (it==train_structure.end())
     {
-        for (int k=0;k<93;k++)
+        for (int k=0;k<94;k++)
             for (int i=0;i<tmp.stationNum-1;i++)
                 tmp.ticket_num[k][i]=tmp.seatNum;
         for (int i=0;i<tmp.stationNum-1;i++)
@@ -845,7 +845,7 @@ void add_train()
     } else
     {
         it.data(true).current_status=0;
-        for (int k=0;k<93;k++)
+        for (int k=0;k<94;k++)
             for (int i=0;i<tmp.stationNum-1;i++)
                 tmp.ticket_num[k][i]=tmp.seatNum;
         for (int i=0;i<tmp.stationNum-1;i++)
@@ -932,7 +932,7 @@ void query_train()
         if (op=='i') scanf("%s",cur_id.trainID);
         else if (op=='d')
         {
-            char s[7];
+            char s[13];
             scanf("%s",s);
             int len=strlen(s);
             bool flag=false;
@@ -1034,7 +1034,7 @@ void query_ticket()
         else if (op=='t') scanf("%s",t.station_name);
         else if (op=='d')
         {
-            char s[7];
+            char s[13];
             scanf("%s",s);
             int len=strlen(s);
             bool flag=false;
@@ -1048,7 +1048,7 @@ void query_ticket()
             }
         } else if (op=='p')
         {
-            char s[7];
+            char s[13];
             scanf("%s",s);
             if (s[0]=='t') q=true; else q=false;
         }
@@ -1080,7 +1080,7 @@ void query_ticket()
                 pos2=i;
                 break;
             }
-        if (pos1!=-1&&pos2!=-1)
+        if (pos1!=-1&&pos2!=-1&&pos1<pos2)
         {
             bool flag=true;
             int val=itt.data().sum_travelTimes[pos1]+itt.data().sum_stopoverTimes[pos1];
@@ -1166,7 +1166,7 @@ void query_transfer()
         else if (op=='t') scanf("%s",t.station_name);
         else if (op=='d')
         {
-            char s[7];
+            char s[13];
             scanf("%s",s);
             int len=strlen(s);
             bool flag=false;
@@ -1180,7 +1180,7 @@ void query_transfer()
             }
         } else if (op=='p')
         {
-            char s[7];
+            char s[13];
             scanf("%s",s);
             if (s[0]=='t') q=true; else q=false;
         }
@@ -1400,7 +1400,7 @@ void buy_ticket()
         else if (op=='i') scanf("%s",tmp_id.trainID);
         else if (op=='d')
         {
-            char s[7];
+            char s[13];
             scanf("%s",s);
             int len=strlen(s);
             bool flag=false;
@@ -1418,7 +1418,7 @@ void buy_ticket()
         else if (op=='t') scanf("%s",t.station_name);
         else if (op=='q')
         {
-            char s[7];
+            char s[13];
             scanf("%s",s);
             if (s[0]=='t') q=true;
         }
