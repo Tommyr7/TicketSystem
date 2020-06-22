@@ -324,14 +324,14 @@ struct train
     int stationNum;
     station stations[100];
     int seatNum;
-    int prices[100],sum_prices[100];
+    int prices[101],sum_prices[101];
     time startTimes;
-    int travelTimes[100],sum_travelTimes[100];
-    int stopoverTimes[100],sum_stopoverTimes[100];
+    int travelTimes[101],sum_travelTimes[101];
+    int stopoverTimes[101],sum_stopoverTimes[101];
     date left_saleDate,right_saleDate;
     char type;
     int current_status;
-    int ticket_num[93][100];
+    int ticket_num[93][101];
     train()
     {
         memset(trainID,0,sizeof(trainID));
