@@ -8,6 +8,7 @@
 #include "LRUbptree.hpp"
 const int modp1=998244353;
 const int modp2=100000007;
+const int base=307;
 #define __File1 "1.txt"
 #define __File2 "2.txt"
 #define __File3 "3.txt"
@@ -22,6 +23,81 @@ const int modp2=100000007;
 using namespace std;
 const char instruction_name[16][15]={"add_user","login","logout","query_profile","modify_profile","add_train","release_train","query_train","delete_train","query_ticket","query_transfer","buy_ticket","query_order","refund_ticket","clean","exit"};
 int to[300][30],instruction_id[300],cnt;
+struct user_hash
+{
+    pair<int,int> val;
+    user_hash()
+    {
+        val.first=0;
+        val.second=0;
+    }
+    bool operator <(user_hash &rhs)
+    {
+        return val<rhs.val;
+    }
+    bool operator <(const user_hash &rhs)
+    {
+        return val<rhs.val;
+    }
+};
+bool operator <(const user_hash &rhs1,user_hash &rhs2)
+{
+    return rhs1.val<rhs2.val;
+}
+bool operator <(const user_hash &rhs1,const user_hash &rhs2)
+{
+    return rhs1.val<rhs2.val;
+}
+struct train_hash
+{
+    pair<int,int> val;
+    train_hash()
+    {
+        val.first=0;
+        val.second=0;
+    }
+    bool operator <(train_hash &rhs)
+    {
+        return val<rhs.val;
+    }
+    bool operator <(const train_hash &rhs)
+    {
+        return val<rhs.val;
+    }
+};
+bool operator <(const train_hash &rhs1,train_hash &rhs2)
+{
+    return rhs1.val<rhs2.val;
+}
+bool operator <(const train_hash &rhs1,const train_hash &rhs2)
+{
+    return rhs1.val<rhs2.val;
+}
+struct station_hash
+{
+    pair<int,int> val;
+    station_hash()
+    {
+        val.first=0;
+        val.second=0;
+    }
+    bool operator <(station_hash &rhs)
+    {
+        return val<rhs.val;
+    }
+    bool operator <(const station_hash &rhs)
+    {
+        return val<rhs.val;
+    }
+};
+bool operator <(const station_hash &rhs1,station_hash &rhs2)
+{
+    return rhs1.val<rhs2.val;
+}
+bool operator <(const station_hash &rhs1,const station_hash &rhs2)
+{
+    return rhs1.val<rhs2.val;
+}
 struct date
 {
     int month,day;
@@ -410,6 +486,7 @@ bool order1_check(ans1_order &a,ans1_order &b,bool flag)
 }
 struct ans2_order
 {
+    train_hash ans_train1_hash,ans_train2_hash;
     train_id ans_train1_id,ans_train2_id;
     date d1,d2;
     time t1,t2;
@@ -450,7 +527,7 @@ bool order2_check(ans2_order &a,ans2_order &b,bool flag)
 }
 struct order
 {
-    train_id t;
+    train_hash t_hash;
     date tmp_d;
     time tmp_t;
     int idx;
@@ -478,11 +555,11 @@ bool check_new_file(const string &path)
     test.close();
     return ans;
 }
-LRUBPTree<user_id,user> user_structure(__File1,__File2,check_new_file(__File1));
-LRUBPTree<train_id,train> train_structure(__File3,__File4,check_new_file(__File3));
-LRUBPTree<pair<station,train_id>,bool> station_structure(__File5,__File6,check_new_file(__File5));
-LRUBPTree<pair<user_id,int>,order> order_structure(__File7,__File8,check_new_file(__File7));
-LRUBPTree<pair<train_id,int>,pair<user_id,order> > alter_structure(__File9,__File10,check_new_file(__File9));
+LRUBPTree<user_hash,user> user_structure(__File1,__File2,check_new_file(__File1));
+LRUBPTree<train_hash,train> train_structure(__File3,__File4,check_new_file(__File3));
+LRUBPTree<pair<station_hash,train_hash>,int> station_structure(__File5,__File6,check_new_file(__File5));
+LRUBPTree<pair<user_hash,int>,order> order_structure(__File7,__File8,check_new_file(__File7));
+LRUBPTree<pair<train_hash,int>,pair<user_hash,order> > alter_structure(__File9,__File10,check_new_file(__File9));
 void pre_work()
 {
     cnt=0;
@@ -501,19 +578,32 @@ void pre_work()
 }
 void add_user()
 {
-    user_id cur_id,tmp_id;
+    user_id cur_id;
+    user_hash cur_hash,tmp_hash;
     user tmp;
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='c') scanf("%s",cur_id.username);
+        if (op=='c') 
+        {
+            scanf("%s",cur_id.username);
+            int len=strlen(cur_id.username);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.username[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.username[i]+1)%modp2;
+            }
+        }
         else if (op=='u') 
         {
-            scanf("%s",tmp_id.username);
-            int len=strlen(tmp_id.username);
+            scanf("%s",tmp.username);
+            int len=strlen(tmp.username);
             for (int i=0;i<len;i++)
-                tmp.username[i]=tmp_id.username[i];
+            {
+                tmp_hash.val.first=(1LL*base*tmp_hash.val.first+tmp.username[i]+1)%modp1;
+                tmp_hash.val.second=(1LL*base*tmp_hash.val.second+tmp.username[i]+1)%modp2;
+            }
         }
         else if (op=='p') 
         {
@@ -522,8 +612,8 @@ void add_user()
             int len=strlen(s);
             for (int i=0;i<len;i++)
             {
-                tmp.password.first=(307LL*tmp.password.first+s[i]+1)%modp1;
-                tmp.password.second=(307LL*tmp.password.second+s[i]+1)%modp2;
+                tmp.password.first=(1LL*base*tmp.password.first+s[i]+1)%modp1;
+                tmp.password.second=(1LL*base*tmp.password.second+s[i]+1)%modp2;
             }
         }
         else if (op=='n') scanf("%s",tmp.name);
@@ -531,14 +621,14 @@ void add_user()
         else if (op=='g') scanf("%d",&tmp.privilege);
         op=getchar();
     }
-    if (user_structure.find(tmp_id)!=user_structure.end())
+    if (user_structure.find(tmp_hash)!=user_structure.end())
     {
         printf("%d\n",-1);
         return;
     }
     if (user_structure.size()!=0)
     {
-        LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+        LRUBPTree<user_hash,user>::iterator it=user_structure.find(cur_hash);
         if ((it==user_structure.end())||(!it.data().login_flag)||(it.data().privilege<=tmp.privilege))
         {
             printf("%d\n",-1);
@@ -546,11 +636,12 @@ void add_user()
         }
     } else tmp.privilege=10;
     printf("%d\n",0);
-    user_structure.insert(tmp_id,tmp);
+    user_structure.insert(tmp_hash,tmp);
 }
 void login()
 {
     user_id cur_id;
+    user_hash cur_hash;
     pair<int,int> tmp_password;
     tmp_password.first=0;
     tmp_password.second=0;
@@ -558,7 +649,16 @@ void login()
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='u') scanf("%s",cur_id.username);
+        if (op=='u') 
+        {
+            scanf("%s",cur_id.username);
+            int len=strlen(cur_id.username);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.username[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.username[i]+1)%modp2;
+            }
+        }
         else if (op=='p') 
         {
             char p[33];
@@ -566,13 +666,13 @@ void login()
             int len=strlen(p);
             for (int i=0;i<len;i++)
             {
-                tmp_password.first=(307LL*tmp_password.first+p[i]+1)%modp1;
-                tmp_password.second=(307LL*tmp_password.second+p[i]+1)%modp2;
+                tmp_password.first=(1LL*base*tmp_password.first+p[i]+1)%modp1;
+                tmp_password.second=(1LL*base*tmp_password.second+p[i]+1)%modp2;
             }
         }
         op=getchar();
     }
-    LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+    LRUBPTree<user_hash,user>::iterator it=user_structure.find(cur_hash);
     if (it==user_structure.end()||it.data().login_flag)
     {
         printf("%d\n",-1);
@@ -591,14 +691,24 @@ void login()
 void logout()
 {
     user_id cur_id;
+    user_hash cur_hash;
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='u') scanf("%s",cur_id.username);
+        if (op=='u') 
+        {
+            scanf("%s",cur_id.username);
+            int len=strlen(cur_id.username);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.username[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.username[i]+1)%modp2;
+            }
+        }
         op=getchar();
     }
-    LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+    LRUBPTree<user_hash,user>::iterator it=user_structure.find(cur_hash);
     if (it==user_structure.end()||(!it.data().login_flag))
     {
         printf("%d\n",-1);
@@ -610,16 +720,35 @@ void logout()
 void query_profile()
 {
     user_id cur_id,tmp_id;
+    user_hash cur_hash,tmp_hash;
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='c') scanf("%s",cur_id.username);
-        else if (op=='u') scanf("%s",tmp_id.username);
+        if (op=='c') 
+        {
+            scanf("%s",cur_id.username);
+            int len=strlen(cur_id.username);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.username[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.username[i]+1)%modp2;
+            }
+        }
+        else if (op=='u') 
+        {
+            scanf("%s",tmp_id.username);
+            int len=strlen(tmp_id.username);
+            for (int i=0;i<len;i++)
+            {
+                tmp_hash.val.first=(1LL*base*tmp_hash.val.first+tmp_id.username[i]+1)%modp1;
+                tmp_hash.val.second=(1LL*base*tmp_hash.val.second+tmp_id.username[i]+1)%modp2;
+            }
+        }
         op=getchar();
     }
-    LRUBPTree<user_id,user>::iterator it1=user_structure.find(cur_id);
-    LRUBPTree<user_id,user>::iterator it2=user_structure.find(tmp_id);
+    LRUBPTree<user_hash,user>::iterator it1=user_structure.find(cur_hash);
+    LRUBPTree<user_hash,user>::iterator it2=user_structure.find(tmp_hash);
     if (it1==user_structure.end()||it2==user_structure.end()||(!it1.data().login_flag)||(it1.data().privilege<it2.data().privilege)||((it1.data().privilege==it2.data().privilege)&&(it1!=it2)))
     {
         printf("%d\n",-1);
@@ -642,14 +771,33 @@ void query_profile()
 void modify_profile()
 {
     user_id cur_id,tmp_id;
+    user_hash cur_hash,tmp_hash;
     user tmp;
     char op=getchar();
     bool flag_p=false,flag_n=false,flag_m=false,flag_g=false;
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='c') scanf("%s",cur_id.username);
-        else if (op=='u') scanf("%s",tmp_id.username);
+        if (op=='c') 
+        {
+            scanf("%s",cur_id.username);
+            int len=strlen(cur_id.username);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.username[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.username[i]+1)%modp2;
+            }
+        }
+        else if (op=='u') 
+        {
+            scanf("%s",tmp_id.username);
+            int len=strlen(tmp_id.username);
+            for (int i=0;i<len;i++)
+            {
+                tmp_hash.val.first=(1LL*base*tmp_hash.val.first+tmp_id.username[i]+1)%modp1;
+                tmp_hash.val.second=(1LL*base*tmp_hash.val.second+tmp_id.username[i]+1)%modp2;
+            }
+        }
         else if (op=='p') 
         {
             char s[33];
@@ -657,8 +805,8 @@ void modify_profile()
             int len=strlen(s);
             for (int i=0;i<len;i++)
             {
-                tmp.password.first=(307LL*tmp.password.first+s[i]+1)%modp1;
-                tmp.password.second=(307LL*tmp.password.second+s[i]+1)%modp2;
+                tmp.password.first=(1LL*base*tmp.password.first+s[i]+1)%modp1;
+                tmp.password.second=(1LL*base*tmp.password.second+s[i]+1)%modp2;
             }
             flag_p=true;
         }
@@ -679,8 +827,8 @@ void modify_profile()
         }
         op=getchar();
     }
-    LRUBPTree<user_id,user>::iterator it1=user_structure.find(cur_id);
-    LRUBPTree<user_id,user>::iterator it2=user_structure.find(tmp_id);
+    LRUBPTree<user_hash,user>::iterator it1=user_structure.find(cur_hash);
+    LRUBPTree<user_hash,user>::iterator it2=user_structure.find(tmp_hash);
     if (it1==user_structure.end()||it2==user_structure.end()||(!it1.data().login_flag)||(it1.data().privilege<it2.data().privilege)||((it1.data().privilege==it2.data().privilege)&&(it1!=it2)))
     {
         printf("%d\n",-1);
@@ -724,6 +872,7 @@ void modify_profile()
 void add_train()
 {
     train_id tmp_id;
+    train_hash tmp_hash;
     train tmp;
     char op=getchar();
     while (op!='\n')
@@ -734,7 +883,11 @@ void add_train()
             scanf("%s",tmp_id.trainID);
             int len=strlen(tmp_id.trainID);
             for (int i=0;i<len;i++)
+            {
                 tmp.trainID[i]=tmp_id.trainID[i];
+                tmp_hash.val.first=(1LL*base*tmp_hash.val.first+tmp_id.trainID[i]+1)%modp1;
+                tmp_hash.val.second=(1LL*base*tmp_hash.val.second+tmp_id.trainID[i]+1)%modp2;
+            }
         }
         else if (op=='n') scanf("%d",&tmp.stationNum);
         else if (op=='m') scanf("%d",&tmp.seatNum);
@@ -823,7 +976,7 @@ void add_train()
         }
         op=getchar();
     }
-    LRUBPTree<train_id,train>::iterator it=train_structure.find(tmp_id);
+    LRUBPTree<train_hash,train>::iterator it=train_structure.find(tmp_hash);
     if (it!=train_structure.end()&&it.data().current_status!=-1)
     {
         printf("%d\n",-1);
@@ -841,7 +994,7 @@ void add_train()
             tmp.sum_stopoverTimes[i+1]=tmp.sum_stopoverTimes[i]+tmp.stopoverTimes[i];
         for (int i=0;i<tmp.stationNum-1;i++)
             tmp.sum_prices[i+1]=tmp.sum_prices[i]+tmp.prices[i];
-        train_structure.insert(tmp_id,tmp);
+        train_structure.insert(tmp_hash,tmp);
     } else
     {
         it.data(true).current_status=0;
@@ -897,14 +1050,24 @@ void add_train()
 void release_train()
 {
     train_id cur_id;
+    train_hash cur_hash;
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='i') scanf("%s",cur_id.trainID);
+        if (op=='i') 
+        {
+            scanf("%s",cur_id.trainID);
+            int len=strlen(cur_id.trainID);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.trainID[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.trainID[i]+1)%modp2;
+            }
+        }
         op=getchar();
     }
-    LRUBPTree<train_id,train>::iterator it=train_structure.find(cur_id);
+    LRUBPTree<train_hash,train>::iterator it=train_structure.find(cur_hash);
     if (it==train_structure.end()||it.data().current_status!=0)
     {
         printf("%d\n",-1);
@@ -914,22 +1077,37 @@ void release_train()
     it.data(true).current_status=1;
     for (int i=0;i<(it.data().stationNum);i++)
     {
-        pair<station,train_id> tmp;
-        tmp.first=it.data().stations[i];
-        tmp.second=it.key();
-        station_structure.insert(tmp,true);
+        pair<station_hash,train_hash> tmp;
+        int len=strlen(it.data().stations[i].station_name);
+        for (int j=0;j<len;j++)
+        {
+            tmp.first.val.first=(1LL*base*tmp.first.val.first+it.data().stations[i].station_name[j]+1)%modp1;
+            tmp.first.val.second=(1LL*base*tmp.first.val.second+it.data().stations[i].station_name[j]+1)%modp2;
+        }
+        tmp.second=cur_hash;
+        station_structure.insert(tmp,i);
     }
 }
 void query_train()
 {
     train_id cur_id;
+    train_hash cur_hash;
     date d;
     date now_date(0,0);
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='i') scanf("%s",cur_id.trainID);
+        if (op=='i') 
+        {
+            scanf("%s",cur_id.trainID);
+            int len=strlen(cur_id.trainID);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.trainID[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.trainID[i]+1)%modp2;
+            }
+        }
         else if (op=='d')
         {
             char s[13];
@@ -948,7 +1126,7 @@ void query_train()
         op=getchar();
     }
     d=now_date;
-    LRUBPTree<train_id,train>::iterator it=train_structure.find(cur_id);
+    LRUBPTree<train_hash,train>::iterator it=train_structure.find(cur_hash);
     if ((it==train_structure.end())||(now_date<it.data().left_saleDate)||(it.data().right_saleDate<now_date)||(it.data().current_status==-1))
     {
         printf("%d\n",-1);
@@ -1005,14 +1183,24 @@ void query_train()
 void delete_train()
 {
     train_id cur_id;
+    train_hash cur_hash;
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='i') scanf("%s",cur_id.trainID);
+        if (op=='i') 
+        {
+            scanf("%s",cur_id.trainID);
+            int len=strlen(cur_id.trainID);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.trainID[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.trainID[i]+1)%modp2;
+            }
+        }
         op=getchar();
     }
-    LRUBPTree<train_id,train>::iterator it=train_structure.find(cur_id);
+    LRUBPTree<train_hash,train>::iterator it=train_structure.find(cur_hash);
     if (it==train_structure.end()||it.data().current_status!=0)
     {
         printf("%d\n",-1);
@@ -1024,14 +1212,33 @@ void delete_train()
 void query_ticket()
 {
     station s,t;
+    station_hash s_hash,t_hash;
     date h(0,0);
     bool q=true;
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='s') scanf("%s",s.station_name);
-        else if (op=='t') scanf("%s",t.station_name);
+        if (op=='s') 
+        {
+            scanf("%s",s.station_name);
+            int len=strlen(s.station_name);
+            for (int i=0;i<len;i++)
+            {
+                s_hash.val.first=(1LL*base*s_hash.val.first+s.station_name[i]+1)%modp1;
+                s_hash.val.second=(1LL*base*s_hash.val.second+s.station_name[i]+1)%modp2;
+            }
+        }
+        else if (op=='t') 
+        {
+            scanf("%s",t.station_name);
+            int len=strlen(t.station_name);
+            for (int i=0;i<len;i++)
+            {
+                t_hash.val.first=(1LL*base*t_hash.val.first+t.station_name[i]+1)%modp1;
+                t_hash.val.second=(1LL*base*t_hash.val.second+t.station_name[i]+1)%modp2;
+            }
+        }
         else if (op=='d')
         {
             char s[13];
@@ -1054,32 +1261,26 @@ void query_ticket()
         }
         op=getchar();
     }
-    pair<station,train_id> cur;
-    cur.first=s;
-    LRUBPTree<pair<station,train_id>,bool>::iterator it,end_it;
+    pair<station_hash,train_hash> cur;
+    cur.first=s_hash;
+    LRUBPTree<pair<station_hash,train_hash>,int>::iterator it,end_it;
     int cnt=0;
     psgi::vector<ans1_order> ans;
     ans.clear();
     int T;
     for (it=station_structure.lower_bound(cur),end_it=station_structure.end();it!=end_it;it++)
     {
-        if (s<it.key().first) break;
-        train_id tmp_id=it.key().second;
-        LRUBPTree<train_id,train>::iterator itt=train_structure.find(tmp_id);
+        if (s_hash<it.key().first) break;
+        train_hash tmp_hash=it.key().second;
+        LRUBPTree<train_hash,train>::iterator itt=train_structure.find(tmp_hash);
         if (itt.data().current_status!=1) continue;
-        int pos1=-1,pos2=-1;
-        for (int i=0;i<itt.data().stationNum;i++)
-            if ((!(s<itt.data().stations[i]))&&(!(itt.data().stations[i]<s))) 
-            {
-                pos1=i;
-                break;
-            }
-        for (int i=pos1+1;i<itt.data().stationNum;i++)
-            if ((!(t<itt.data().stations[i]))&&(!(itt.data().stations[i]<t))) 
-            {
-                pos2=i;
-                break;
-            }
+        int pos1=it.data();
+        int pos2=-1;
+        pair<station_hash,train_hash> tmp_key;
+        tmp_key.first=t_hash;
+        tmp_key.second=tmp_hash;
+        LRUBPTree<pair<station_hash,train_hash>,int>::iterator tmp_it=station_structure.find(tmp_key);
+        if (tmp_it!=end_it) pos2=tmp_it.data();
         if (pos1!=-1&&pos2!=-1&&pos1<pos2)
         {
             bool flag=true;
@@ -1097,7 +1298,9 @@ void query_ticket()
             {
                 ++cnt;
                 ans1_order Tmp;
-                Tmp.ans_train_id=tmp_id;
+                int len=strlen(itt.data().trainID);
+                for (int i=0;i<len;i++)
+                    Tmp.ans_train_id.trainID[i]=itt.data().trainID[i];
                 Tmp.d=h;
                 Tmp.t=tmp_t;
                 Tmp.pos_s=pos1;
@@ -1156,14 +1359,33 @@ void query_ticket()
 void query_transfer()
 {
     station s,t;
+    station_hash s_hash,t_hash;
     date h(0,0);
     bool q=true;
     char op=getchar();
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='s') scanf("%s",s.station_name);
-        else if (op=='t') scanf("%s",t.station_name);
+        if (op=='s') 
+        {
+            scanf("%s",s.station_name);
+            int len=strlen(s.station_name);
+            for (int i=0;i<len;i++)
+            {
+                s_hash.val.first=(1LL*base*s_hash.val.first+s.station_name[i]+1)%modp1;
+                s_hash.val.second=(1LL*base*s_hash.val.second+s.station_name[i]+1)%modp2;
+            }
+        }
+        else if (op=='t') 
+        {
+            scanf("%s",t.station_name);
+            int len=strlen(t.station_name);
+            for (int i=0;i<len;i++)
+            {
+                t_hash.val.first=(1LL*base*t_hash.val.first+t.station_name[i]+1)%modp1;
+                t_hash.val.second=(1LL*base*t_hash.val.second+t.station_name[i]+1)%modp2;
+            }
+        }
         else if (op=='d')
         {
             char s[13];
@@ -1186,46 +1408,38 @@ void query_transfer()
         }
         op=getchar();
     }
-    LRUBPTree<pair<station,train_id>,bool>::iterator it1,it2,end_it=station_structure.end();
-    pair<station,train_id> cur_s,cur_t;
-    cur_s.first=s;
-    cur_t.first=t;
+    LRUBPTree<pair<station_hash,train_hash>,int>::iterator it1,it2,end_it=station_structure.end();
+    pair<station_hash,train_hash> cur_s,cur_t;
+    cur_s.first=s_hash;
+    cur_t.first=t_hash;
     ans2_order ans;
     bool flag_find=false;
-    for (it1=station_structure.lower_bound(cur_s);(it1!=end_it)&&(!(s<it1.key().first))&&(!(it1.key().first<s));it1++)
+    for (it1=station_structure.lower_bound(cur_s);(it1!=end_it)&&(!(s_hash<it1.key().first))&&(!(it1.key().first<s_hash));it1++)
     {
-        train_id tmp1_train_id=it1.key().second;
-        LRUBPTree<train_id,train>::iterator itt1=train_structure.find(tmp1_train_id);
+        train_hash tmp1_train_hash=it1.key().second;
+        LRUBPTree<train_hash,train>::iterator itt1=train_structure.find(tmp1_train_hash);
         if (itt1.data().current_status!=1) continue;
-        for (it2=station_structure.lower_bound(cur_t);(it2!=end_it)&&(!(t<it2.key().first))&&(!(it2.key().first<t));it2++)
+        for (it2=station_structure.lower_bound(cur_t);(it2!=end_it)&&(!(t_hash<it2.key().first))&&(!(it2.key().first<t_hash));it2++)
         {
-            train_id tmp2_train_id=it2.key().second;
-            LRUBPTree<train_id,train>::iterator itt2=train_structure.find(tmp2_train_id);
+            train_hash tmp2_train_hash=it2.key().second;
+            LRUBPTree<train_hash,train>::iterator itt2=train_structure.find(tmp2_train_hash);
             if (itt2.data().current_status!=1) continue;
             if ((!(itt1.data()<itt2.data()))&&(!(itt2.data()<itt1.data()))) continue;
-            int pos1=-1,pos4=-1;
-            for (int i=0;i<itt1.data().stationNum;i++)
-                if ((!(itt1.data().stations[i]<s))&&(!(s<itt1.data().stations[i]))) 
-                {
-                    pos1=i;
-                    break;
-                }
-            if (pos1==-1) continue;
-            for (int i=0;i<itt2.data().stationNum;i++)
-                if ((!(itt2.data().stations[i]<t))&&(!(t<itt2.data().stations[i]))) 
-                {
-                    pos4=i;
-                    break;
-                }
-            if (pos4==-1) continue;
+            int pos1=it1.data(),pos4=it2.data();
             int T1,T2;
             for (int pos2=pos1+1;pos2<itt1.data().stationNum;pos2++)
                 for (int pos3=0;pos3<pos4;pos3++)
                 {
                     if ((itt1.data().stations[pos2]<itt2.data().stations[pos3])||(itt2.data().stations[pos3]<itt1.data().stations[pos2])) continue;
                     ans2_order tmp_order;
-                    tmp_order.ans_train1_id=tmp1_train_id;
-                    tmp_order.ans_train2_id=tmp2_train_id;
+                    tmp_order.ans_train1_hash=tmp1_train_hash;
+                    tmp_order.ans_train2_hash=tmp2_train_hash;
+                    int len1=strlen(itt1.data().trainID);
+                    for (int i=0;i<len1;i++)
+                        tmp_order.ans_train1_id.trainID[i]=itt1.data().trainID[i];
+                    int len2=strlen(itt2.data().trainID);
+                    for (int i=0;i<len2;i++)
+                        tmp_order.ans_train2_id.trainID[i]=itt2.data().trainID[i];
                     date tmp_date;
                     time tmp_time;
                     int total_time;
@@ -1303,9 +1517,9 @@ void query_transfer()
     }
     int len;
     date tmp_d;
-    LRUBPTree<train_id,train>::iterator itt1,itt2;
-    itt1=train_structure.find(ans.ans_train1_id);
-    itt2=train_structure.find(ans.ans_train2_id);
+    LRUBPTree<train_hash,train>::iterator itt1,itt2;
+    itt1=train_structure.find(ans.ans_train1_hash);
+    itt2=train_structure.find(ans.ans_train2_hash);
     time tmp_t;
     {
         len=strlen(ans.ans_train1_id.trainID);
@@ -1387,7 +1601,9 @@ void query_transfer()
 void buy_ticket()
 {
     user_id cur_id;
+    user_hash cur_hash;
     train_id tmp_id;
+    train_hash tmp_hash;
     date h(0,0);
     station s,t;
     int num;
@@ -1396,8 +1612,26 @@ void buy_ticket()
     while (op!='\n')
     {
         while (op<'a'||op>'z') op=getchar();
-        if (op=='u') scanf("%s",cur_id.username);
-        else if (op=='i') scanf("%s",tmp_id.trainID);
+        if (op=='u') 
+        {
+            scanf("%s",cur_id.username);
+            int len=strlen(cur_id.username);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.username[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.username[i]+1)%modp2;
+            }
+        }
+        else if (op=='i') 
+        {
+            scanf("%s",tmp_id.trainID);
+            int len=strlen(tmp_id.trainID);
+            for (int i=0;i<len;i++)
+            {
+                tmp_hash.val.first=(1LL*base*tmp_hash.val.first+tmp_id.trainID[i]+1)%modp1;
+                tmp_hash.val.second=(1LL*base*tmp_hash.val.second+tmp_id.trainID[i]+1)%modp2;
+            }
+        }
         else if (op=='d')
         {
             char s[13];
@@ -1425,14 +1659,14 @@ void buy_ticket()
         op=getchar();
     }
     user cur;
-    LRUBPTree<user_id,user>::iterator it1=user_structure.find(cur_id);
+    LRUBPTree<user_hash,user>::iterator it1=user_structure.find(cur_hash);
     if (it1==user_structure.end()||(!it1.data().login_flag))
     {
         printf("%d\n",-1);
         return;
     }
     cur=it1.data();
-    LRUBPTree<train_id,train>::iterator it2=train_structure.find(tmp_id);
+    LRUBPTree<train_hash,train>::iterator it2=train_structure.find(tmp_hash);
     if (it2==train_structure.end())
     {
         printf("%d\n",-1);
@@ -1489,7 +1723,7 @@ void buy_ticket()
         for (int i=pos1;i<pos2;i++)
             it2.data(true).ticket_num[tmp_idx][i]-=num;
         order tmp_order;
-        tmp_order.t=tmp_id;
+        tmp_order.t_hash=tmp_hash;
         tmp_order.tmp_d=h;
         tmp_order.tmp_t=tmp_time;
         tmp_order.idx=tmp_idx;
@@ -1499,8 +1733,8 @@ void buy_ticket()
         tmp_order.price=sum;
         tmp_order.alter_flag=q;
         tmp_order.status=1;
-        pair<user_id,int> Tmp;
-        Tmp.first=cur_id;
+        pair<user_hash,int> Tmp;
+        Tmp.first=cur_hash;
         Tmp.second=-(order_structure.size()+1);
         order_structure.insert(Tmp,tmp_order);
     } else if (!q) printf("%d\n",-1);
@@ -1509,7 +1743,7 @@ void buy_ticket()
         printf("queue\n");
         int sum=it2.data().sum_prices[pos2]-it2.data().sum_prices[pos1];
         order tmp_order;
-        tmp_order.t=tmp_id;
+        tmp_order.t_hash=tmp_hash;
         tmp_order.tmp_d=h;
         tmp_order.tmp_t=tmp_time;
         tmp_order.idx=tmp_idx;
@@ -1519,15 +1753,15 @@ void buy_ticket()
         tmp_order.price=sum;
         tmp_order.alter_flag=q;
         tmp_order.status=0;
-        pair<user_id,int> Tmp;
-        Tmp.first=cur_id;
+        pair<user_hash,int> Tmp;
+        Tmp.first=cur_hash;
         Tmp.second=-(order_structure.size()+1);
         order_structure.insert(Tmp,tmp_order);
-        pair<train_id,int> tmp1;
-        tmp1.first=tmp_id;
+        pair<train_hash,int> tmp1;
+        tmp1.first=tmp_hash;
         tmp1.second=-Tmp.second;
-        pair<user_id,order> tmp2;
-        tmp2.first=cur_id;
+        pair<user_hash,order> tmp2;
+        tmp2.first=cur_hash;
         tmp2.second=tmp_order;
         alter_structure.insert(tmp1,tmp2);
     }
@@ -1535,43 +1769,53 @@ void buy_ticket()
 void query_order()
 {
     user_id cur_id;
+    user_hash cur_hash;
     char ch=getchar();
     while (ch!='\n')
     {
         while (ch<'a'||ch>'z') ch=getchar();
-        if (ch=='u') scanf("%s",cur_id.username);
+        if (ch=='u') 
+        {
+            scanf("%s",cur_id.username);
+            int len=strlen(cur_id.username);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.username[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.username[i]+1)%modp2;
+            }
+        }
         ch=getchar();
     }
-    LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+    LRUBPTree<user_hash,user>::iterator it=user_structure.find(cur_hash);
     if (it==user_structure.end()||(!it.data().login_flag))
     {
         printf("%d\n",-1);
         return;
     }
-    pair<user_id,int> tmp;
-    tmp.first=cur_id;
+    pair<user_hash,int> tmp;
+    tmp.first=cur_hash;
     tmp.second=-10000000;
     int cnt=0;
-    LRUBPTree<pair<user_id,int>,order>::iterator end_it=order_structure.end();
-    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
+    LRUBPTree<pair<user_hash,int>,order>::iterator end_it=order_structure.end();
+    for (LRUBPTree<pair<user_hash,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
     {
-        if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
+        if ((it1.key().first<cur_hash)||(cur_hash<it1.key().first)) break;
         ++cnt;
     }
     printf("%d\n",cnt);
     int len;
-    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
+    for (LRUBPTree<pair<user_hash,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
     {
-        if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
+        if ((it1.key().first<cur_hash)||(cur_hash<it1.key().first)) break;
         order tmp_order=it1.data();
         if (tmp_order.status==-1) printf("[refunded] ");
         else if (tmp_order.status==0) printf("[pending] ");
         else printf("[success] ");
-        len=strlen(tmp_order.t.trainID);
+        LRUBPTree<train_hash,train>::iterator it2=train_structure.find(tmp_order.t_hash);
+        len=strlen(it2.data().trainID);
         for (int i=0;i<len;i++)
-            printf("%c",tmp_order.t.trainID[i]);
+            printf("%c",it2.data().trainID[i]);
         printf(" ");
-        LRUBPTree<train_id,train>::iterator it2=train_structure.find(tmp_order.t);
         len=strlen(it2.data().stations[tmp_order.pos_s].station_name);
         for (int i=0;i<len;i++)
             printf("%c",it2.data().stations[tmp_order.pos_s].station_name[i]);
@@ -1608,28 +1852,38 @@ void query_order()
 void refund_ticket()
 {
     user_id cur_id;
+    user_hash cur_hash;
     int pos;
     char ch=getchar();
     while (ch!='\n')
     {
         while (ch<'a'||ch>'z') ch=getchar();
-        if (ch=='u') scanf("%s",cur_id.username);
+        if (ch=='u') 
+        {
+            scanf("%s",cur_id.username);
+            int len=strlen(cur_id.username);
+            for (int i=0;i<len;i++)
+            {
+                cur_hash.val.first=(1LL*base*cur_hash.val.first+cur_id.username[i]+1)%modp1;
+                cur_hash.val.second=(1LL*base*cur_hash.val.second+cur_id.username[i]+1)%modp2;
+            }
+        }
         else if (ch=='n') scanf("%d",&pos);
         ch=getchar();
     }
-    LRUBPTree<user_id,user>::iterator it=user_structure.find(cur_id);
+    LRUBPTree<user_hash,user>::iterator it=user_structure.find(cur_hash);
     if ((it==user_structure.end())||(!(it.data().login_flag)))
     {
         printf("%d\n",-1);
         return;
     }
-    pair<user_id,int> tmp;
-    tmp.first=cur_id;
+    pair<user_hash,int> tmp;
+    tmp.first=cur_hash;
     tmp.second=-10000000;
-    LRUBPTree<pair<user_id,int>,order>::iterator ans_it,end_it=order_structure.end();
-    for (LRUBPTree<pair<user_id,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
+    LRUBPTree<pair<user_hash,int>,order>::iterator ans_it,end_it=order_structure.end();
+    for (LRUBPTree<pair<user_hash,int>,order>::iterator it1=order_structure.lower_bound(tmp);it1!=end_it;it1++)
     {
-        if ((it1.key().first<cur_id)||(cur_id<it1.key().first)) break;
+        if ((it1.key().first<cur_hash)||(cur_hash<it1.key().first)) break;
         --pos;
         if (pos==0)
         {
@@ -1650,23 +1904,23 @@ void refund_ticket()
     printf("%d\n",0);
     int op=ans_it.data().status;
     ans_it.data(true).status=-1;
-    LRUBPTree<train_id,train>::iterator train_it=train_structure.find(ans_it.data().t);
+    LRUBPTree<train_hash,train>::iterator train_it=train_structure.find(ans_it.data().t_hash);
     if (op==1)
     {
         for (int i=ans_it.data().pos_s;i<ans_it.data().pos_t;i++)
             train_it.data(true).ticket_num[ans_it.data().idx][i]+=ans_it.data().num;
     }
-    pair<train_id,int> tmp1;
-    tmp1.first=ans_it.data().t;
+    pair<train_hash,int> tmp1;
+    tmp1.first=ans_it.data().t_hash;
     tmp1.second=-ans_it.key().second;
-    LRUBPTree<pair<train_id,int>,pair<user_id,order> >::iterator tmp_it=alter_structure.find(tmp1),end_it1=alter_structure.end();
+    LRUBPTree<pair<train_hash,int>,pair<user_hash,order> >::iterator tmp_it=alter_structure.find(tmp1),end_it1=alter_structure.end();
     if (tmp_it!=alter_structure.end()) tmp_it.data(true).second.status=-1;
     if (op!=1) return;
     tmp1.second=-10000000;
-    for (LRUBPTree<pair<train_id,int>,pair<user_id,order> >::iterator alter_it=alter_structure.lower_bound(tmp1);alter_it!=end_it1;alter_it++)
+    for (LRUBPTree<pair<train_hash,int>,pair<user_hash,order> >::iterator alter_it=alter_structure.lower_bound(tmp1);alter_it!=end_it1;alter_it++)
     {
         if ((alter_it.key().first<tmp1.first)||(tmp1.first<alter_it.key().first)) break;
-        pair<user_id,order> now=alter_it.data();
+        pair<user_hash,order> now=alter_it.data();
         if (now.second.idx!=ans_it.data().idx) continue;
         if (now.second.status!=0) continue;
         bool flag=true;
@@ -1677,10 +1931,10 @@ void refund_ticket()
             for (int i=now.second.pos_s;i<now.second.pos_t;i++)
                 train_it.data(true).ticket_num[now.second.idx][i]-=now.second.num;
             alter_it.data(true).second.status=1;
-            pair<user_id,int> q;
+            pair<user_hash,int> q;
             q.first=now.first;
             q.second=-(alter_it.key().second);
-            LRUBPTree<pair<user_id,int>,order>::iterator itt=order_structure.find(q);
+            LRUBPTree<pair<user_hash,int>,order>::iterator itt=order_structure.find(q);
             itt.data(true).status=1;
         }
     }
@@ -1725,7 +1979,7 @@ int main()
             case 14:clean();break;
             case 15:
             {
-                for (LRUBPTree<user_id,user>::iterator it=user_structure.begin();it!=user_structure.end();it++)
+                for (LRUBPTree<user_hash,user>::iterator it=user_structure.begin();it!=user_structure.end();it++)
                     it.data(true).login_flag=false;
                 printf("bye\n");
                 return 0;
